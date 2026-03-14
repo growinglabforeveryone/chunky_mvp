@@ -115,6 +115,16 @@ export default function ExtractPage() {
                 text={sourceText}
                 chunks={chunks}
                 hoveredChunkId={hoveredChunkId}
+                onAddPhrase={(phrase, sentence) => {
+                  addChunk({
+                    id: crypto.randomUUID(),
+                    phrase,
+                    meaning: "",
+                    exampleSentence: sentence,
+                    createdAt: new Date().toISOString(),
+                  });
+                  toast.success(`"${phrase}" 추가됨`);
+                }}
               />
             </div>
           </div>
