@@ -1,10 +1,11 @@
 import { useChunkStore } from "@/store/chunkStore";
-import { Trash2, Search } from "lucide-react";
+import { Search } from "lucide-react";
 import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { AnimatePresence } from "framer-motion";
+import ChunkCard from "@/components/ChunkCard";
 
 export default function LibraryPage() {
-  const { savedChunks, removeSavedChunk } = useChunkStore();
+  const { savedChunks, updateSavedChunk, removeSavedChunk } = useChunkStore();
   const [search, setSearch] = useState("");
 
   const filtered = savedChunks.filter(
@@ -39,36 +40,31 @@ export default function LibraryPage() {
           </p>
         </div>
       ) : (
-        <div className="space-y-2">
+        <div className="space-y-3">
           <AnimatePresence>
-            {filtered.map((chunk) => (
-              <motion.div
-                key={chunk.id}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0, height: 0 }}
-                className="flex items-center gap-4 rounded-xl border bg-card p-4 shadow-sm"
-              >
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-baseline gap-2">
-                    <p className="font-medium text-foreground truncate">
-                      {chunk.phrase}
-                    </p>
-                    <p className="text-sm text-muted-foreground truncate">
-                      {chunk.meaning}
-                    </p>
+            {filtered.map((chunk, i) => (
+              <div key={chunk.id}>
+                {(chunk.sourceName || chunk.mastered) && (
+                  <div className="mb-1.5 flex gap-2 px-1">
+                    {chunk.sourceName && (
+                      <span className="rounded-full bg-secondary px-2 py-0.5 text-xs text-muted-foreground">
+                        {chunk.sourceName}
+                      </span>
+                    )}
+                    {chunk.mastered && (
+                      <span className="rounded-full bg-green-50 border border-green-200 px-2 py-0.5 text-xs text-green-700">
+                        완료 ✓
+                      </span>
+                    )}
                   </div>
-                  <p className="mt-1 font-serif text-sm text-muted-foreground/70 italic truncate">
-                    "{chunk.exampleSentence}"
-                  </p>
-                </div>
-                <button
-                  onClick={() => removeSavedChunk(chunk.id)}
-                  className="shrink-0 rounded-lg p-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
-              </motion.div>
+                )}
+                <ChunkCard
+                  chunk={chunk}
+                  index={i}
+                  onUpdate={updateSavedChunk}
+                  onRemove={removeSavedChunk}
+                />
+              </div>
             ))}
           </AnimatePresence>
         </div>

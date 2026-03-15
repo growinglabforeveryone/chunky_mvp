@@ -1,11 +1,20 @@
 import { useState, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { useChunkStore } from "@/store/chunkStore";
-import { extractChunksMock } from "@/lib/mockExtractor";
+import { extractChunks, getMeaning } from "@/lib/claudeExtractor";
 import TextReader from "@/components/TextReader";
 import ChunkCard from "@/components/ChunkCard";
-import { Plus, Sparkles, Save, Loader2 } from "lucide-react";
+import { Plus, Sparkles, Save, Loader2, ChevronDown } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
+
+const SOURCE_PRESETS = [
+  { label: "📧 이메일", value: "이메일" },
+  { label: "📰 기사/뉴스", value: "기사/뉴스" },
+  { label: "📚 교재/수업", value: "교재/수업" },
+  { label: "📖 책", value: "책" },
+  { label: "💼 업무 문서", value: "업무 문서" },
+];
 
 export default function ExtractPage() {
   const {
@@ -17,21 +26,27 @@ export default function ExtractPage() {
     removeChunk,
     addChunk,
     commitChunks,
+    setSourceName,
+    sourceName,
   } = useChunkStore();
 
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [hoveredChunkId, setHoveredChunkId] = useState<string | null>(null);
   const [inputText, setInputText] = useState("");
+  const [showSource, setShowSource] = useState(false);
+  const [customSource, setCustomSource] = useState("");
 
   const handleExtract = useCallback(async () => {
     if (!inputText.trim()) return;
     setLoading(true);
     setSourceText(inputText);
     try {
-      const result = await extractChunksMock(inputText);
+      const result = await extractChunks(inputText);
       setChunks(result);
       toast.success(`${result.length}개의 단어뭉치를 추출했습니다`);
-    } catch {
+    } catch (err) {
+      console.error("Extract error:", err);
       toast.error("추출에 실패했습니다");
     } finally {
       setLoading(false);
@@ -48,11 +63,16 @@ export default function ExtractPage() {
     });
   };
 
-  const handleCommit = () => {
+  const handleCommit = async () => {
     if (chunks.length === 0) return;
-    commitChunks();
-    setInputText("");
-    toast.success("단어뭉치가 저장되었습니다 ✓");
+    try {
+      await commitChunks();
+      setInputText("");
+      toast.success("저장 완료! 지금 바로 복습해보세요 ✓");
+      navigate("/review");
+    } catch {
+      toast.error("저장에 실패했습니다. 다시 시도해주세요.");
+    }
   };
 
   const showReader = sourceText && chunks.length > 0;
@@ -77,6 +97,82 @@ export default function ExtractPage() {
             placeholder="영어 기사, 이메일, 또는 텍스트를 여기에 붙여넣으세요..."
             className="w-full resize-none rounded-xl border bg-card p-6 font-serif text-lg leading-relaxed shadow-sm placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/20"
           />
+
+          {/* 출처 선택 (선택사항) */}
+          <div className="space-y-3">
+            <button
+              type="button"
+              onClick={() => setShowSource((v) => !v)}
+              className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <ChevronDown className={`h-3.5 w-3.5 transition-transform ${showSource ? "rotate-180" : ""}`} />
+              출처 추가 <span className="text-xs opacity-60">(선택)</span>
+              {sourceName && (
+                <span className="ml-1 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+                  {sourceName}
+                </span>
+              )}
+            </button>
+
+            <AnimatePresence>
+              {showSource && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="overflow-hidden"
+                >
+                  <div className="space-y-3 pt-1">
+                    <div className="flex flex-wrap gap-2">
+                      {SOURCE_PRESETS.map((preset) => (
+                        <button
+                          key={preset.value}
+                          type="button"
+                          onClick={() => {
+                            setSourceName(sourceName === preset.value ? "" : preset.value);
+                            setCustomSource("");
+                          }}
+                          className={`rounded-full border px-3 py-1.5 text-sm transition-colors ${
+                            sourceName === preset.value
+                              ? "border-primary bg-primary/10 text-primary font-medium"
+                              : "border-border bg-card text-muted-foreground hover:border-primary/40 hover:text-foreground"
+                          }`}
+                        >
+                          {preset.label}
+                        </button>
+                      ))}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSourceName("");
+                          setCustomSource((v) => v || " ");
+                        }}
+                        className={`rounded-full border px-3 py-1.5 text-sm transition-colors ${
+                          customSource.trim()
+                            ? "border-primary bg-primary/10 text-primary font-medium"
+                            : "border-border bg-card text-muted-foreground hover:border-primary/40 hover:text-foreground"
+                        }`}
+                      >
+                        ✏️ 직접입력
+                      </button>
+                    </div>
+                    {(customSource || customSource === " ") && (
+                      <input
+                        autoFocus
+                        value={customSource.trim()}
+                        onChange={(e) => {
+                          setCustomSource(e.target.value);
+                          setSourceName(e.target.value);
+                        }}
+                        placeholder="예: HBR, Ringle, Harry Potter..."
+                        className="w-full rounded-lg border bg-card px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+                      />
+                    )}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
 
           <button
             onClick={handleExtract}
@@ -116,14 +212,18 @@ export default function ExtractPage() {
                 chunks={chunks}
                 hoveredChunkId={hoveredChunkId}
                 onAddPhrase={(phrase, sentence) => {
+                  const id = crypto.randomUUID();
                   addChunk({
-                    id: crypto.randomUUID(),
+                    id,
                     phrase,
-                    meaning: "",
+                    meaning: "번역 중...",
                     exampleSentence: sentence,
                     createdAt: new Date().toISOString(),
                   });
                   toast.success(`"${phrase}" 추가됨`);
+                  getMeaning(phrase).then((meaning) => {
+                    updateChunk(id, { meaning });
+                  });
                 }}
               />
             </div>

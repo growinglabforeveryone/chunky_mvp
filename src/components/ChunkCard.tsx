@@ -1,6 +1,6 @@
 import { Chunk } from "@/types/chunk";
 import { Pencil, Trash2, Check, X } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 
 interface ChunkCardProps {
@@ -23,6 +23,13 @@ export default function ChunkCard({
   const [editing, setEditing] = useState(false);
   const [phrase, setPhrase] = useState(chunk.phrase);
   const [meaning, setMeaning] = useState(chunk.meaning);
+
+  // 번역 중... 일 때 스토어에서 뜻이 들어오면 로컬 상태도 업데이트
+  useEffect(() => {
+    if (meaning === "번역 중..." && chunk.meaning !== "번역 중...") {
+      setMeaning(chunk.meaning);
+    }
+  }, [chunk.meaning]);
   const [sentence, setSentence] = useState(chunk.exampleSentence);
 
   const save = () => {

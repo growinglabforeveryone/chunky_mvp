@@ -3,7 +3,12 @@ export interface Chunk {
   phrase: string;
   meaning: string;
   exampleSentence: string;
+  reuseExample?: string;
   sourceText?: string;
+  sourceName?: string;
+  mastered?: boolean;
+  reviewStage?: number;
+  nextReviewAt?: string;
   createdAt: string;
 }
 
