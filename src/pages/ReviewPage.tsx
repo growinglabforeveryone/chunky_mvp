@@ -1,23 +1,25 @@
 import { useState, useMemo, useEffect } from "react";
 import { useChunkStore } from "@/store/chunkStore";
 import { motion, AnimatePresence } from "framer-motion";
-import { RotateCcw, Shuffle, X, Check, ChevronDown } from "lucide-react";
+import { RotateCcw, Shuffle, X, Check, ChevronDown, MinusCircle } from "lucide-react";
 import { toast } from "sonner";
 import { findRelatedPhrases } from "@/utils/relatedPhrases";
 
 type Mode = "kr-to-en" | "en-to-kr";
 
 const STAGE_LABELS = ["신규", "1일", "7일", "30일", "완료"];
+const NEXT_REVIEW_LABELS = ["", "1일 뒤", "7일 뒤", "30일 뒤"];
 
-function isDue(chunk: { reviewStage?: number; nextReviewAt?: string; mastered?: boolean }) {
+function isDue(chunk: { reviewStage?: number; nextReviewAt?: string; mastered?: boolean; status?: string }) {
   if (chunk.mastered) return false;
+  if (chunk.status === "excluded") return false;
   if ((chunk.reviewStage ?? 0) === 0) return true; // 저장 직후
   if (!chunk.nextReviewAt) return true;
   return new Date(chunk.nextReviewAt) <= new Date();
 }
 
 export default function ReviewPage() {
-  const { savedChunks, advanceChunk, resetChunk } = useChunkStore();
+  const { savedChunks, advanceChunk, resetChunk, excludeChunk } = useChunkStore();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
   const [mode, setMode] = useState<Mode>("kr-to-en");
@@ -66,8 +68,7 @@ export default function ReviewPage() {
     if (newStage >= 4) {
       toast.success("완료! 장기 기억으로 전환됐어요 🎉");
     } else {
-      const labels = ["", "1일", "7일", "30일"];
-      toast.success(`다음 복습: ${labels[newStage]} 후`);
+      toast.success(`다음 복습: ${NEXT_REVIEW_LABELS[newStage]}`);
     }
     const next = { ...sessionStats, understood: sessionStats.understood + 1 };
     setSessionStats(next);
@@ -91,6 +92,17 @@ export default function ReviewPage() {
       } else {
         toast("내일 다시 복습할게요");
       }
+      goNext();
+    }
+  };
+
+  const handleExclude = async () => {
+    const isLast = currentIndex === dueCards.length - 1;
+    await excludeChunk(current.id);
+    toast("라이브러리에서 복구할 수 있어요");
+    if (isLast) {
+      setIsComplete(true);
+    } else {
       goNext();
     }
   };
@@ -131,7 +143,7 @@ export default function ReviewPage() {
   // 오늘 할 카드 없음
   if (savedChunks.length > 0 && dueCards.length === 0) {
     const nextDue = savedChunks
-      .filter((c) => !c.mastered && c.nextReviewAt)
+      .filter((c) => !c.mastered && c.status !== "excluded" && c.nextReviewAt)
       .sort((a, b) => new Date(a.nextReviewAt!).getTime() - new Date(b.nextReviewAt!).getTime())[0];
 
     return (
@@ -189,7 +201,6 @@ export default function ReviewPage() {
         </div>
 
         <div className="flex items-center gap-3">
-          {/* 오늘 할 카드 수 */}
           <span className="text-sm text-muted-foreground">
             <span className="tabular-nums font-medium text-foreground">{currentIndex + 1}</span>
             <span className="mx-1">/</span>
@@ -267,6 +278,15 @@ export default function ReviewPage() {
                 알았어요
               </button>
             </div>
+
+            {/* 제외 버튼 (작고 서브텍스트처럼) */}
+            <button
+              onClick={(e) => { e.stopPropagation(); handleExclude(); }}
+              className="mt-3 flex items-center gap-1 text-xs text-muted-foreground/50 hover:text-muted-foreground transition-colors"
+            >
+              <MinusCircle className="h-3 w-3" />
+              복습 목록에서 제외
+            </button>
           </div>
         </motion.div>
       </div>

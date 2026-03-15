@@ -29,6 +29,8 @@ interface ChunkStore {
   masterChunk: (id: string) => Promise<void>;
   advanceChunk: (id: string) => Promise<void>;
   resetChunk: (id: string) => Promise<void>;
+  excludeChunk: (id: string) => Promise<void>;
+  restoreChunk: (id: string) => Promise<void>;
   loadSavedChunks: () => Promise<void>;
 }
 
@@ -74,6 +76,7 @@ export const useChunkStore = create<ChunkStore>((set, get) => ({
       created_at: c.createdAt,
       review_stage: 0,
       next_review_at: null,
+      status: "active",
       user_id: user?.id ?? null,
     }));
 
@@ -85,6 +88,7 @@ export const useChunkStore = create<ChunkStore>((set, get) => ({
       sourceName: sourceName || undefined,
       reviewStage: 0,
       nextReviewAt: undefined,
+      status: "active" as const,
     }));
 
     set((s) => ({
@@ -119,12 +123,12 @@ export const useChunkStore = create<ChunkStore>((set, get) => ({
   masterChunk: async (id) => {
     const { error } = await supabase
       .from("vocabulary")
-      .update({ mastered: true, review_stage: 4, next_review_at: null })
+      .update({ mastered: true, review_stage: 4, next_review_at: null, status: "mastered" })
       .eq("id", id);
     if (error) throw error;
     set((s) => ({
       savedChunks: s.savedChunks.map((c) =>
-        c.id === id ? { ...c, mastered: true, reviewStage: 4 } : c
+        c.id === id ? { ...c, mastered: true, reviewStage: 4, status: "mastered" as const } : c
       ),
     }));
   },
@@ -146,20 +150,18 @@ export const useChunkStore = create<ChunkStore>((set, get) => ({
     const nextReviewAt = daysFromNow(STAGE_INTERVALS[newStage]);
     const { error } = await supabase
       .from("vocabulary")
-      .update({ review_stage: newStage, next_review_at: nextReviewAt })
+      .update({ review_stage: newStage, next_review_at: nextReviewAt, status: "active" })
       .eq("id", id);
     if (error) throw error;
 
     set((s) => ({
       savedChunks: s.savedChunks.map((c) =>
-        c.id === id ? { ...c, reviewStage: newStage, nextReviewAt } : c
+        c.id === id ? { ...c, reviewStage: newStage, nextReviewAt, status: "active" as const } : c
       ),
     }));
   },
 
   // 몰랐어요
-  // stage 0 (신규): 변경 없이 이번 세션에서 다시 보여주기
-  // stage 1+: 1단계로 초기화, 내일 다시
   resetChunk: async (id) => {
     const chunk = get().savedChunks.find((c) => c.id === id);
     if (!chunk) return;
@@ -169,13 +171,41 @@ export const useChunkStore = create<ChunkStore>((set, get) => ({
     const nextReviewAt = daysFromNow(1);
     const { error } = await supabase
       .from("vocabulary")
-      .update({ review_stage: 1, next_review_at: nextReviewAt })
+      .update({ review_stage: 1, next_review_at: nextReviewAt, status: "active" })
       .eq("id", id);
     if (error) throw error;
 
     set((s) => ({
       savedChunks: s.savedChunks.map((c) =>
-        c.id === id ? { ...c, reviewStage: 1, nextReviewAt } : c
+        c.id === id ? { ...c, reviewStage: 1, nextReviewAt, status: "active" as const } : c
+      ),
+    }));
+  },
+
+  // 이 단어 제외 (소프트 삭제)
+  excludeChunk: async (id) => {
+    const { error } = await supabase
+      .from("vocabulary")
+      .update({ status: "excluded", next_review_at: null })
+      .eq("id", id);
+    if (error) throw error;
+    set((s) => ({
+      savedChunks: s.savedChunks.map((c) =>
+        c.id === id ? { ...c, status: "excluded" as const, nextReviewAt: undefined } : c
+      ),
+    }));
+  },
+
+  // 제외된 단어 복구
+  restoreChunk: async (id) => {
+    const { error } = await supabase
+      .from("vocabulary")
+      .update({ status: "active", review_stage: 0, next_review_at: null })
+      .eq("id", id);
+    if (error) throw error;
+    set((s) => ({
+      savedChunks: s.savedChunks.map((c) =>
+        c.id === id ? { ...c, status: "active" as const, reviewStage: 0, nextReviewAt: undefined } : c
       ),
     }));
   },
@@ -203,6 +233,7 @@ export const useChunkStore = create<ChunkStore>((set, get) => ({
       mastered: row.mastered ?? false,
       reviewStage: row.review_stage ?? 0,
       nextReviewAt: row.next_review_at ?? undefined,
+      status: (row.status ?? "active") as "active" | "mastered" | "excluded",
       createdAt: row.created_at,
     }));
 

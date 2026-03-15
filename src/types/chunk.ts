@@ -1,3 +1,5 @@
+export type ChunkStatus = "active" | "mastered" | "excluded";
+
 export interface Chunk {
   id: string;
   phrase: string;
@@ -9,6 +11,7 @@ export interface Chunk {
   mastered?: boolean;
   reviewStage?: number;
   nextReviewAt?: string;
+  status?: ChunkStatus;
   createdAt: string;
 }
 
