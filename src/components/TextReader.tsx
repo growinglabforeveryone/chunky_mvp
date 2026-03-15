@@ -139,19 +139,15 @@ export default function TextReader({
         if (part.chunkId) {
           const isHovered = hoveredChunkId === part.chunkId;
           return (
-            <span key={i} className="relative cursor-pointer group inline">
-              <span
-                className={`absolute inset-x-0 -bottom-0.5 h-2 transition-colors duration-200 ${
-                  isHovered ? "bg-accent/70" : "bg-accent/40"
-                }`}
-              />
-              <span
-                className={`relative font-medium transition-opacity duration-200 ${
-                  dimmed && !isHovered ? "opacity-40" : "opacity-100"
-                }`}
-              >
-                {part.text}
-              </span>
+            <span
+              key={i}
+              className={`cursor-pointer rounded-sm px-0.5 -mx-0.5 transition-all duration-200 ${
+                isHovered
+                  ? "bg-accent/80 shadow-[0_0_0_2px_hsl(var(--accent)/0.4)]"
+                  : "bg-accent/50"
+              } ${dimmed && !isHovered ? "opacity-40" : "opacity-100"}`}
+            >
+              {part.text}
             </span>
           );
         }
