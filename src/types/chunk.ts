@@ -8,6 +8,8 @@ export interface Chunk {
   reuseExample?: string;
   sourceText?: string;
   sourceName?: string;
+  sourceUrl?: string;
+  sourceType?: "text" | "youtube";
   mastered?: boolean;
   reviewStage?: number;
   nextReviewAt?: string;
