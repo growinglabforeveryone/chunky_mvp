@@ -148,15 +148,16 @@ export const useChunkStore = create<ChunkStore>((set, get) => ({
     }
 
     const nextReviewAt = daysFromNow(STAGE_INTERVALS[newStage]);
+    const lastReviewedAt = new Date().toISOString();
     const { error } = await supabase
       .from("vocabulary")
-      .update({ review_stage: newStage, next_review_at: nextReviewAt, status: "active" })
+      .update({ review_stage: newStage, next_review_at: nextReviewAt, last_reviewed_at: lastReviewedAt, status: "active" })
       .eq("id", id);
     if (error) throw error;
 
     set((s) => ({
       savedChunks: s.savedChunks.map((c) =>
-        c.id === id ? { ...c, reviewStage: newStage, nextReviewAt, status: "active" as const } : c
+        c.id === id ? { ...c, reviewStage: newStage, nextReviewAt, lastReviewedAt, status: "active" as const } : c
       ),
     }));
   },
@@ -166,18 +167,30 @@ export const useChunkStore = create<ChunkStore>((set, get) => ({
     const chunk = get().savedChunks.find((c) => c.id === id);
     if (!chunk) return;
 
-    if ((chunk.reviewStage ?? 0) === 0) return; // 신규 카드 → 세션 내 재등장
+    if ((chunk.reviewStage ?? 0) === 0) {
+      // 신규 카드 → stage는 그대로, 세션 내 재등장 허용
+      // 단, lastReviewedAt은 기록해서 다음 방문 시 오늘 복습한 걸로 처리
+      const lastReviewedAt = new Date().toISOString();
+      await supabase.from("vocabulary").update({ last_reviewed_at: lastReviewedAt }).eq("id", id);
+      set((s) => ({
+        savedChunks: s.savedChunks.map((c) =>
+          c.id === id ? { ...c, lastReviewedAt } : c
+        ),
+      }));
+      return;
+    }
 
     const nextReviewAt = daysFromNow(1);
+    const lastReviewedAt = new Date().toISOString();
     const { error } = await supabase
       .from("vocabulary")
-      .update({ review_stage: 1, next_review_at: nextReviewAt, status: "active" })
+      .update({ review_stage: 1, next_review_at: nextReviewAt, last_reviewed_at: lastReviewedAt, status: "active" })
       .eq("id", id);
     if (error) throw error;
 
     set((s) => ({
       savedChunks: s.savedChunks.map((c) =>
-        c.id === id ? { ...c, reviewStage: 1, nextReviewAt, status: "active" as const } : c
+        c.id === id ? { ...c, reviewStage: 1, nextReviewAt, lastReviewedAt, status: "active" as const } : c
       ),
     }));
   },
@@ -233,6 +246,7 @@ export const useChunkStore = create<ChunkStore>((set, get) => ({
       mastered: row.mastered ?? false,
       reviewStage: row.review_stage ?? 0,
       nextReviewAt: row.next_review_at ?? undefined,
+      lastReviewedAt: row.last_reviewed_at ?? undefined,
       status: (row.status ?? "active") as "active" | "mastered" | "excluded",
       createdAt: row.created_at,
     }));

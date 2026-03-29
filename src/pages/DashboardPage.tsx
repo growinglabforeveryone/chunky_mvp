@@ -48,27 +48,43 @@ export default function DashboardPage() {
 
   const stats = useMemo(() => {
     const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
     const active = savedChunks.filter((c) => c.status === "active" || !c.status);
     const mastered = savedChunks.filter((c) => c.status === "mastered");
-    const dueToday = active.filter((c) => {
-      if (!c.nextReviewAt) return (c.reviewStage ?? 0) === 0;
-      return new Date(c.nextReviewAt) <= today;
+
+    const reviewedToday = savedChunks.filter((c) => {
+      if (!c.lastReviewedAt) return false;
+      const d = new Date(c.lastReviewedAt);
+      d.setHours(0, 0, 0, 0);
+      return d >= today;
     });
-    const addedToday = savedChunks.filter((c) => isSameDay(new Date(c.createdAt), today));
-    const streak = getStreak(savedChunks);
-    const studiedToday = addedToday.length > 0 || dueToday.length < active.filter((c) => {
+
+    const dueToday = active.filter((c) => {
+      // 오늘 이미 복습한 카드 제외
+      if (c.lastReviewedAt) {
+        const d = new Date(c.lastReviewedAt);
+        d.setHours(0, 0, 0, 0);
+        if (d >= today) return false;
+      }
       if (!c.nextReviewAt) return (c.reviewStage ?? 0) === 0;
-      return new Date(c.nextReviewAt) <= today;
-    }).length;
+      return new Date(c.nextReviewAt) <= new Date();
+    });
+
+    const addedToday = savedChunks.filter((c) => isSameDay(new Date(c.createdAt), new Date()));
+    const streak = getStreak(savedChunks);
+    const reviewDoneToday = reviewedToday.length > 0 && dueToday.length === 0;
 
     return {
       total: savedChunks.length,
       active: active.length,
       mastered: mastered.length,
       dueToday: dueToday.length,
+      reviewedToday: reviewedToday.length,
+      reviewDoneToday,
       addedToday: addedToday.length,
       streak,
-      studiedToday: addedToday.length > 0,
+      studiedToday: reviewedToday.length > 0 || addedToday.length > 0,
       masteredPercent: savedChunks.length > 0 ? Math.round((mastered.length / savedChunks.length) * 100) : 0,
     };
   }, [savedChunks]);
@@ -130,14 +146,23 @@ export default function DashboardPage() {
         </motion.div>
 
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
-          <Card className="border-none bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30">
+          <Card className={`border-none ${stats.reviewDoneToday ? "bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30" : "bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30"}`}>
             <CardContent className="flex items-center gap-4 p-5">
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                <BookOpen className="h-6 w-6" />
+              <div className={`flex h-12 w-12 items-center justify-center rounded-xl ${stats.reviewDoneToday ? "bg-green-500/10 text-green-600" : "bg-primary/10 text-primary"}`}>
+                {stats.reviewDoneToday ? <CheckCircle2 className="h-6 w-6" /> : <BookOpen className="h-6 w-6" />}
               </div>
               <div>
-                <p className="text-2xl font-bold text-foreground">{stats.dueToday}개</p>
-                <p className="text-sm text-muted-foreground">오늘 복습할 표현</p>
+                {stats.reviewDoneToday ? (
+                  <>
+                    <p className="text-2xl font-bold text-green-600">완료 ✓</p>
+                    <p className="text-sm text-muted-foreground">오늘 복습 완료</p>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-2xl font-bold text-foreground">{stats.dueToday}개</p>
+                    <p className="text-sm text-muted-foreground">오늘 복습할 표현</p>
+                  </>
+                )}
               </div>
             </CardContent>
           </Card>

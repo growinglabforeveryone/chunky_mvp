@@ -1,0 +1,2 @@
+ALTER TABLE vocabulary
+  ADD COLUMN IF NOT EXISTS last_reviewed_at TIMESTAMPTZ;

@@ -29,7 +29,18 @@ export default function ReviewPage() {
   const [isComplete, setIsComplete] = useState(false);
 
   const dueCards = useMemo(() => {
-    const due = savedChunks.filter(isDue);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const due = savedChunks.filter((c) => {
+      if (!isDue(c)) return false;
+      if (c.lastReviewedAt) {
+        const reviewed = new Date(c.lastReviewedAt);
+        reviewed.setHours(0, 0, 0, 0);
+        if (reviewed >= today) return false;
+      }
+      return true;
+    });
     if (shuffled) return [...due].sort(() => Math.random() - 0.5);
     // 신규(stage 0) 먼저, 그 다음 due 날짜 오래된 순
     return due.sort((a, b) => {

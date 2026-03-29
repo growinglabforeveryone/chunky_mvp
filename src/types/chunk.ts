@@ -13,6 +13,7 @@ export interface Chunk {
   mastered?: boolean;
   reviewStage?: number;
   nextReviewAt?: string;
+  lastReviewedAt?: string;
   status?: ChunkStatus;
   createdAt: string;
 }
