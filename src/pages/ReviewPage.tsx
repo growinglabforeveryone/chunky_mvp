@@ -114,6 +114,28 @@ export default function ReviewPage() {
     toast("다시 한 번 해봐요 💪");
   };
 
+  // 키보드 단축키: Space=뒤집기, →=알았어요(뒤집힌 상태), ←=몰랐어요(뒤집힌 상태)
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => {
+      if (!current || isComplete) return;
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+
+      if (e.code === "Space") {
+        e.preventDefault();
+        setIsFlipped((f) => !f);
+      } else if (e.code === "ArrowRight" && isFlipped) {
+        e.preventDefault();
+        handleKnew();
+      } else if (e.code === "ArrowLeft" && isFlipped) {
+        e.preventDefault();
+        handleDidntKnow();
+      }
+    };
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [current, isFlipped, isComplete]);
+
   const handleExclude = async () => {
     if (!current) return;
     const card = current;
@@ -280,7 +302,7 @@ export default function ReviewPage() {
             <p className={`text-center text-2xl font-semibold ${mode === "en-to-kr" ? "" : "font-serif"}`}>
               {frontContent}
             </p>
-            <p className="mt-8 text-xs text-muted-foreground/60">클릭하여 뒤집기</p>
+            <p className="mt-8 text-xs text-muted-foreground/60">클릭 또는 Space</p>
           </div>
 
           {/* Back */}
@@ -302,6 +324,7 @@ export default function ReviewPage() {
               >
                 <X className="h-3.5 w-3.5" />
                 몰랐어요
+                <kbd className="ml-1 text-xs text-red-400 font-mono">←</kbd>
               </button>
               <button
                 onClick={handleKnew}
@@ -309,6 +332,7 @@ export default function ReviewPage() {
               >
                 <Check className="h-3.5 w-3.5" />
                 알았어요
+                <kbd className="ml-1 text-xs text-green-500 font-mono">→</kbd>
               </button>
             </div>
 
