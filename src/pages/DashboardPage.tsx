@@ -202,6 +202,15 @@ export default function DashboardPage() {
         </Card>
       </motion.div>
 
+      {/* Activity Heatmap */}
+      <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.18 }}>
+        <Card className="mb-6">
+          <CardContent className="p-5">
+            <ActivityHeatmap chunks={savedChunks} />
+          </CardContent>
+        </Card>
+      </motion.div>
+
       {/* Mastery Progress */}
       <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
         <Card className="mb-6">
