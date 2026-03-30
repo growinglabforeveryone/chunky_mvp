@@ -5,6 +5,7 @@ import { Link } from "react-router-dom";
 import { BookOpen, Flame, Library, Layers, Trophy, CheckCircle2, Circle } from "lucide-react";
 import { motion } from "framer-motion";
 import { useMemo } from "react";
+import ActivityHeatmap from "@/components/ActivityHeatmap";
 
 function isSameDay(d1: Date, d2: Date) {
   return d1.getFullYear() === d2.getFullYear() && d1.getMonth() === d2.getMonth() && d1.getDate() === d2.getDate();
@@ -197,6 +198,15 @@ export default function DashboardPage() {
                 </div>
               ))}
             </div>
+          </CardContent>
+        </Card>
+      </motion.div>
+
+      {/* Activity Heatmap */}
+      <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.18 }}>
+        <Card className="mb-6">
+          <CardContent className="p-5">
+            <ActivityHeatmap chunks={savedChunks} />
           </CardContent>
         </Card>
       </motion.div>
