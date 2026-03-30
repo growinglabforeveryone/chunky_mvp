@@ -47,6 +47,7 @@ export default function ExtractPage() {
   const [youtubeTranscript, setYoutubeTranscript] = useState("");
   const [loadingTranscript, setLoadingTranscript] = useState(false);
   const [activeTab, setActiveTab] = useState("text");
+  const [youtubeError, setYoutubeError] = useState<string | null>(null);
 
   const handleExtract = useCallback(async () => {
     const textToExtract = activeTab === "youtube" ? youtubeTranscript : inputText;
@@ -78,6 +79,7 @@ export default function ExtractPage() {
   const handleFetchTranscript = async () => {
     if (!youtubeUrl.trim()) return;
     setLoadingTranscript(true);
+    setYoutubeError(null);
     try {
       const res = await fetch("/api/youtube-transcript", {
         method: "POST",
@@ -86,13 +88,13 @@ export default function ExtractPage() {
       });
       const data = await res.json();
       if (!res.ok) {
-        toast.error(data.error || "영어 자막을 찾을 수 없습니다");
+        setYoutubeError(data.error || "자막을 가져올 수 없습니다");
         return;
       }
       setYoutubeTranscript(data.transcript);
       toast.success("자막을 불러왔습니다");
     } catch {
-      toast.error("자막을 불러오는 중 오류가 발생했습니다");
+      setYoutubeError("자막을 가져올 수 없습니다");
     } finally {
       setLoadingTranscript(false);
     }
@@ -157,7 +159,7 @@ export default function ExtractPage() {
               <div className="flex gap-2">
                 <input
                   value={youtubeUrl}
-                  onChange={(e) => setYoutubeUrl(e.target.value)}
+                  onChange={(e) => { setYoutubeUrl(e.target.value); setYoutubeError(null); }}
                   placeholder="https://youtube.com/watch?v=..."
                   className="flex-1 rounded-xl border bg-card px-4 py-3 text-sm shadow-sm placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/20"
                 />
@@ -166,13 +168,40 @@ export default function ExtractPage() {
                   disabled={loadingTranscript || !youtubeUrl.trim()}
                   className="flex shrink-0 items-center gap-2 rounded-xl border bg-card px-4 py-3 text-sm font-medium text-foreground shadow-sm transition-colors hover:bg-secondary disabled:opacity-50"
                 >
-                  {loadingTranscript ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : null}
+                  {loadingTranscript ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
                   자막 불러오기
                 </button>
               </div>
-              {youtubeTranscript && (
+
+              {youtubeError && (
+                <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm dark:border-amber-800 dark:bg-amber-950/30">
+                  <p className="font-medium text-amber-800 dark:text-amber-300">자막을 자동으로 가져올 수 없어요</p>
+                  <p className="mt-1 text-amber-700 dark:text-amber-400">YouTube가 서버 요청을 차단하고 있습니다. 아래 방법으로 직접 붙여넣기 해주세요.</p>
+                  <ol className="mt-2 list-decimal pl-4 text-amber-700 dark:text-amber-400 space-y-1">
+                    <li>YouTube에서 영상 하단 <strong>···</strong> 메뉴 클릭</li>
+                    <li><strong>스크립트 열기</strong> (Show transcript) 선택</li>
+                    <li>전체 텍스트 복사 후 아래에 붙여넣기</li>
+                  </ol>
+                  {youtubeUrl && (
+                    <a
+                      href={youtubeUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mt-2 inline-block text-xs text-amber-600 underline hover:text-amber-800"
+                    >
+                      영상 열기 →
+                    </a>
+                  )}
+                  <textarea
+                    rows={8}
+                    placeholder="여기에 자막 텍스트를 붙여넣으세요..."
+                    className="mt-3 w-full resize-none rounded-lg border bg-white px-3 py-2 text-sm text-foreground shadow-sm placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/20 dark:bg-card"
+                    onChange={(e) => setYoutubeTranscript(e.target.value)}
+                  />
+                </div>
+              )}
+
+              {!youtubeError && youtubeTranscript && (
                 <textarea
                   value={youtubeTranscript}
                   onChange={(e) => setYoutubeTranscript(e.target.value)}
