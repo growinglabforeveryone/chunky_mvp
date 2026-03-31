@@ -145,13 +145,9 @@ export default function DashboardPage() {
             return (
               <Card className="border-none bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-950/30 dark:to-amber-950/30">
                 <CardContent className="flex items-center gap-4 p-5">
-                  <motion.div
-                    animate={{ y: [0, -4, 0] }}
-                    transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }}
-                    className="flex h-12 w-12 items-center justify-center rounded-xl bg-accent/60 text-3xl select-none"
-                  >
+                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-accent/60 text-3xl select-none">
                     {slime}
-                  </motion.div>
+                  </div>
                   <div>
                     <p className="text-2xl font-bold text-foreground">{stats.streak}일</p>
                     <p className="text-sm text-muted-foreground">{msg}</p>
