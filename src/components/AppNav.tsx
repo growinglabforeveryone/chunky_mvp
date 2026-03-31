@@ -20,7 +20,7 @@ export default function AppNav() {
     <header className="sticky top-0 z-50 border-b bg-card/80 backdrop-blur-sm">
       <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4 sm:px-6">
         <Link to="/" className="flex items-center gap-2">
-          <span className="text-lg font-semibold tracking-tight text-foreground">
+          <span className="text-lg text-foreground" style={{ fontFamily: "'Nunito', sans-serif", fontWeight: 800, letterSpacing: '-0.5px' }}>
             Chunky
           </span>
         </Link>
