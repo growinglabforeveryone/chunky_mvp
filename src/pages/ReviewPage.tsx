@@ -294,52 +294,51 @@ export default function ReviewPage() {
         <motion.div
           animate={{ rotateY: isFlipped ? 180 : 0 }}
           transition={{ type: "spring", duration: 0.6, bounce: 0.1 }}
-          className="preserve-3d relative"
-          style={{ minHeight: "300px" }}
+          className="preserve-3d grid"
         >
-          {/* Front */}
-          <div className="backface-hidden absolute inset-0 flex flex-col items-center justify-center rounded-2xl border bg-card p-8 shadow-md">
-            <p className={`text-center text-2xl font-semibold ${mode === "en-to-kr" ? "" : "font-serif"}`}>
+          {/* Front — grid 스태킹으로 Back과 같은 셀 공유 */}
+          <div className="backface-hidden [grid-area:1/1] flex flex-col items-center justify-center rounded-2xl border bg-card p-6 shadow-md min-h-[220px]">
+            <p className={`text-center text-xl sm:text-2xl font-semibold ${mode === "en-to-kr" ? "" : "font-serif"}`}>
               {frontContent}
             </p>
-            <p className="mt-8 text-xs text-muted-foreground/60">클릭 또는 Space</p>
+            <p className="mt-6 text-xs text-muted-foreground/60">클릭 또는 Space</p>
           </div>
 
           {/* Back */}
-          <div className="backface-hidden rotate-y-180 absolute inset-0 flex flex-col items-center justify-center rounded-2xl border bg-card p-8 shadow-md">
-            <p className={`text-center text-2xl font-semibold ${mode === "kr-to-en" ? "" : "font-serif"}`}>
+          <div className="backface-hidden rotate-y-180 [grid-area:1/1] flex flex-col items-center justify-center rounded-2xl border bg-card p-6 shadow-md">
+            <p className={`text-center text-xl sm:text-2xl font-semibold ${mode === "kr-to-en" ? "" : "font-serif"}`}>
               {backContent}
             </p>
-            <div className="mt-5 rounded-lg bg-secondary/50 px-4 py-3">
-              <p className="font-serif text-sm leading-relaxed text-muted-foreground italic text-center">
+            <div className="mt-4 w-full rounded-lg bg-secondary/50 px-4 py-3">
+              <p className="font-serif text-xs sm:text-sm leading-relaxed text-muted-foreground italic text-center">
                 "{current.exampleSentence}"
               </p>
             </div>
 
             {/* 알았어요 / 몰랐어요 */}
-            <div className="mt-6 flex gap-3" onClick={(e) => e.stopPropagation()}>
+            <div className="mt-5 flex gap-3" onClick={(e) => e.stopPropagation()}>
               <button
                 onClick={handleDidntKnow}
-                className="flex items-center gap-1.5 rounded-full border border-red-200 bg-red-50 px-5 py-2 text-sm text-red-600 hover:bg-red-100 transition-colors"
+                className="flex items-center gap-1.5 rounded-full border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-600 hover:bg-red-100 transition-colors"
               >
                 <X className="h-3.5 w-3.5" />
                 몰랐어요
-                <kbd className="ml-1 text-xs text-red-400 font-mono">←</kbd>
+                <kbd className="ml-1 hidden sm:inline text-xs text-red-400 font-mono">←</kbd>
               </button>
               <button
                 onClick={handleKnew}
-                className="flex items-center gap-1.5 rounded-full border border-green-200 bg-green-50 px-5 py-2 text-sm text-green-700 hover:bg-green-100 transition-colors"
+                className="flex items-center gap-1.5 rounded-full border border-green-200 bg-green-50 px-4 py-2 text-sm text-green-700 hover:bg-green-100 transition-colors"
               >
                 <Check className="h-3.5 w-3.5" />
                 알았어요
-                <kbd className="ml-1 text-xs text-green-500 font-mono">→</kbd>
+                <kbd className="ml-1 hidden sm:inline text-xs text-green-500 font-mono">→</kbd>
               </button>
             </div>
 
             {/* 제외 버튼 */}
             <button
               onClick={(e) => { e.stopPropagation(); handleExclude(); }}
-              className="mt-3 flex items-center gap-1 text-xs text-muted-foreground/50 hover:text-muted-foreground transition-colors"
+              className="mt-3 mb-1 flex items-center gap-1 text-xs text-muted-foreground/50 hover:text-muted-foreground transition-colors"
             >
               <MinusCircle className="h-3 w-3" />
               복습 목록에서 제외
