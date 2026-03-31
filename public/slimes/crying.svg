@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 72 72">
+  <!-- Shadow -->
+  <ellipse cx="36" cy="66" rx="20" ry="4" fill="rgba(0,0,0,0.12)"/>
+  <!-- Body -->
+  <rect x="7" y="13" width="58" height="46" rx="22" fill="#A8CC70"/>
+  <rect x="7" y="13" width="58" height="46" rx="22" fill="none" stroke="rgba(0,0,0,0.10)" stroke-width="2"/>
+  <!-- Highlight -->
+  <rect x="13" y="19" width="15" height="8" rx="4" fill="rgba(255,255,255,0.40)"/>
+  <!-- Left eye (panicked — tall open eye) -->
+  <rect x="20" y="26" width="8" height="10" fill="#1a2030" shape-rendering="crispEdges"/>
+  <rect x="22" y="28" width="3" height="3" fill="white" shape-rendering="crispEdges"/>
+  <!-- Left sweat/tear drops -->
+  <rect x="11" y="28" width="4" height="4" fill="#7BBFE8" shape-rendering="crispEdges"/>
+  <rect x="10" y="33" width="4" height="6" fill="#7BBFE8" shape-rendering="crispEdges"/>
+  <!-- Right eye -->
+  <rect x="44" y="26" width="8" height="10" fill="#1a2030" shape-rendering="crispEdges"/>
+  <rect x="46" y="28" width="3" height="3" fill="white" shape-rendering="crispEdges"/>
+  <!-- Right sweat/tear drop -->
+  <rect x="59" y="28" width="4" height="4" fill="#7BBFE8" shape-rendering="crispEdges"/>
+  <rect x="60" y="33" width="4" height="6" fill="#7BBFE8" shape-rendering="crispEdges"/>
+  <!-- Frown mouth (pixel sad arc) -->
+  <rect x="24" y="46" width="4" height="4" fill="#1a2030" shape-rendering="crispEdges"/>
+  <rect x="28" y="43" width="4" height="4" fill="#1a2030" shape-rendering="crispEdges"/>
+  <rect x="32" y="41" width="8" height="4" fill="#1a2030" shape-rendering="crispEdges"/>
+  <rect x="40" y="43" width="4" height="4" fill="#1a2030" shape-rendering="crispEdges"/>
+  <rect x="44" y="46" width="4" height="4" fill="#1a2030" shape-rendering="crispEdges"/>
+</svg>

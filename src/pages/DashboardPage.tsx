@@ -134,10 +134,10 @@ export default function DashboardPage() {
       <div className="mb-6 grid grid-cols-2 gap-4">
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}>
           {(() => {
-            const slime = stats.streak === 0 ? "😢"
-              : stats.streak === 1 ? "😶"
-              : stats.streak < 7  ? "😊"
-              : "👑";
+            const slimeImg = stats.streak === 0 ? "/slimes/crying.svg"
+              : stats.streak === 1 ? "/slimes/neutral.svg"
+              : stats.streak < 7  ? "/slimes/happy.svg"
+              : "/slimes/crown.svg";
             const msg = stats.streak === 0 ? "오늘부터 다시!"
               : stats.streak === 1 ? "시작이 반이에요"
               : stats.streak < 7  ? "잘 하고 있어요!"
@@ -145,8 +145,8 @@ export default function DashboardPage() {
             return (
               <Card className="border-none bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-950/30 dark:to-amber-950/30">
                 <CardContent className="flex items-center gap-4 p-5">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-accent/60 text-3xl select-none">
-                    {slime}
+                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-accent/30">
+                    <img src={slimeImg} alt="slime" className="w-10 h-10" style={{ imageRendering: "pixelated" }}/>
                   </div>
                   <div>
                     <p className="text-2xl font-bold text-foreground">{stats.streak}일</p>

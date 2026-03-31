@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 72 72">
+  <!-- Shadow -->
+  <ellipse cx="36" cy="66" rx="20" ry="4" fill="rgba(0,0,0,0.12)"/>
+  <!-- Crown (pixel) -->
+  <rect x="22" y="7" width="28" height="7" fill="#F0C030" shape-rendering="crispEdges"/>
+  <rect x="22" y="2" width="6" height="8" fill="#F0C030" shape-rendering="crispEdges"/>
+  <rect x="33" y="0" width="6" height="8" fill="#F0C030" shape-rendering="crispEdges"/>
+  <rect x="44" y="2" width="6" height="8" fill="#F0C030" shape-rendering="crispEdges"/>
+  <!-- Crown outline -->
+  <rect x="22" y="7" width="28" height="7" fill="none" stroke="rgba(0,0,0,0.15)" stroke-width="1.5" shape-rendering="crispEdges"/>
+  <!-- Crown gems -->
+  <rect x="25" y="9" width="4" height="4" fill="#E87070" shape-rendering="crispEdges"/>
+  <rect x="34" y="9" width="4" height="4" fill="#70B8E8" shape-rendering="crispEdges"/>
+  <rect x="43" y="9" width="4" height="4" fill="#E87070" shape-rendering="crispEdges"/>
+  <!-- Body -->
+  <rect x="7" y="13" width="58" height="46" rx="22" fill="#60C870"/>
+  <rect x="7" y="13" width="58" height="46" rx="22" fill="none" stroke="rgba(0,0,0,0.10)" stroke-width="2"/>
+  <!-- Highlight -->
+  <rect x="13" y="19" width="15" height="8" rx="4" fill="rgba(255,255,255,0.40)"/>
+  <!-- Left eye (smug, half-closed) -->
+  <rect x="20" y="30" width="8" height="5" fill="#1a2030" shape-rendering="crispEdges"/>
+  <rect x="22" y="31" width="3" height="2" fill="white" shape-rendering="crispEdges"/>
+  <!-- Right eye (smug) -->
+  <rect x="44" y="30" width="8" height="5" fill="#1a2030" shape-rendering="crispEdges"/>
+  <rect x="46" y="31" width="3" height="2" fill="white" shape-rendering="crispEdges"/>
+  <!-- Confident smile -->
+  <rect x="26" y="41" width="4" height="4" fill="#1a2030" shape-rendering="crispEdges"/>
+  <rect x="30" y="43" width="12" height="4" fill="#1a2030" shape-rendering="crispEdges"/>
+  <rect x="42" y="41" width="4" height="4" fill="#1a2030" shape-rendering="crispEdges"/>
+</svg>
