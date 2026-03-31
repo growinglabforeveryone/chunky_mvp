@@ -192,13 +192,18 @@ export default function ReviewPage() {
   }
 
   if (savedChunks.length > 0 && dueCards.length === 0 && !sessionInitialized) {
+    const tomorrow = new Date();
+    tomorrow.setHours(0, 0, 0, 0);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
     const nextDue = savedChunks
-      .filter((c) => !c.mastered && c.status !== "excluded" && c.nextReviewAt)
+      .filter((c) => !c.mastered && c.status !== "excluded" && c.nextReviewAt
+        && new Date(c.nextReviewAt) >= tomorrow)
       .sort((a, b) => new Date(a.nextReviewAt!).getTime() - new Date(b.nextReviewAt!).getTime())[0];
 
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
-        <div className="text-center space-y-4">
+        <div className="flex flex-col items-center space-y-4 text-center">
           <img src="/slimes/sleeping.svg" alt="slime" className="w-16 h-16" style={{ imageRendering: "pixelated" }}/>
           <p className="font-serif text-2xl font-semibold text-foreground">오늘 할 건 다 했어요</p>
           <p className="text-sm text-muted-foreground leading-relaxed">
@@ -215,7 +220,7 @@ export default function ReviewPage() {
   if (savedChunks.length === 0) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
-        <div className="text-center space-y-4">
+        <div className="flex flex-col items-center space-y-4 text-center">
           <img src="/slimes/sleeping.svg" alt="slime" className="w-16 h-16" style={{ imageRendering: "pixelated" }}/>
           <p className="font-serif text-xl text-foreground">아직 단어뭉치가 없어요</p>
           <p className="text-sm text-muted-foreground">텍스트에서 표현을 뽑아볼까요?</p>
