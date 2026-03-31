@@ -1,3 +1,6 @@
+# Claude Code context files (personal, not for version control)
+.claude/
+
 # Logs
 logs
 *.log

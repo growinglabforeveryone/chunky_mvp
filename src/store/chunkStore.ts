@@ -8,6 +8,7 @@ const STAGE_INTERVALS = [0, 1, 7, 30]; // stage 0→1: 1일, 1→2: 7일, 2→3:
 function daysFromNow(days: number): string {
   const d = new Date();
   d.setDate(d.getDate() + days);
+  d.setHours(0, 0, 0, 0);
   return d.toISOString();
 }
 

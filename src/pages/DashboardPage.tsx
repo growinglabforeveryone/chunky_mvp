@@ -11,16 +11,12 @@ function isSameDay(d1: Date, d2: Date) {
   return d1.getFullYear() === d2.getFullYear() && d1.getMonth() === d2.getMonth() && d1.getDate() === d2.getDate();
 }
 
-function getStreak(chunks: { createdAt: string; status?: string; reviewStage?: number; nextReviewAt?: string }[]) {
-  // Build a set of dates where user did activity (created or reviewed = stage advanced)
+function getStreak(chunks: { createdAt: string; status?: string; reviewStage?: number; lastReviewedAt?: string }[]) {
   const activityDates = new Set<string>();
   for (const c of chunks) {
     activityDates.add(new Date(c.createdAt).toDateString());
-    // If review stage > 0, they reviewed it — approximate review dates from nextReviewAt
-    if (c.nextReviewAt) {
-      const reviewDate = new Date(c.nextReviewAt);
-      // The review happened STAGE_INTERVALS days before nextReviewAt
-      activityDates.add(reviewDate.toDateString());
+    if (c.lastReviewedAt) {
+      activityDates.add(new Date(c.lastReviewedAt).toDateString());
     }
   }
 
@@ -44,8 +40,19 @@ function getStreak(chunks: { createdAt: string; status?: string; reviewStage?: n
   return streak;
 }
 
+const MOTIVATIONAL_COPIES = [
+  "꾸준함이 쌓여 실력이 돼요.",
+  "오늘 복습이 모여 언젠가 자신감이 될 거예요.",
+  "작은 습관이 큰 변화를 만들어요.",
+  "오늘도 영어가 한 발 성장했어요.",
+  "매일의 선택이 모여 내일의 나를 만들어요.",
+  "뇌는 반복할수록 더 잘 기억해요.",
+  "오늘의 노력은 절대 사라지지 않아요.",
+];
+
 export default function DashboardPage() {
   const { savedChunks, isLoadingSaved } = useChunkStore();
+  const dailySubcopy = MOTIVATIONAL_COPIES[new Date().getDate() % MOTIVATIONAL_COPIES.length];
 
   const stats = useMemo(() => {
     const today = new Date();
@@ -121,12 +128,12 @@ export default function DashboardPage() {
         className="mb-8"
       >
         <h1 className="text-2xl font-semibold text-foreground">
-          {stats.studiedToday ? "오늘도 학습 완료! 🎉" : "오늘 학습을 시작해볼까요?"}
+          {stats.studiedToday ? "오늘도 학습 완료!" : "오늘 학습을 시작해볼까요?"}
         </h1>
         <p className="mt-1 text-muted-foreground">
           {stats.total === 0
             ? "아직 저장된 표현이 없어요. 텍스트에서 표현을 추출해보세요!"
-            : `총 ${stats.total}개의 표현 중 ${stats.mastered}개를 마스터했어요.`}
+            : dailySubcopy}
         </p>
       </motion.div>
 
