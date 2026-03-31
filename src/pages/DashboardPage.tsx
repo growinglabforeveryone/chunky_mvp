@@ -2,7 +2,7 @@ import { useChunkStore } from "@/store/chunkStore";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Link } from "react-router-dom";
-import { BookOpen, Flame, Library, Layers, Trophy, CheckCircle2, Circle } from "lucide-react";
+import { BookOpen, Library, Layers, Trophy, CheckCircle2, Circle } from "lucide-react";
 import { motion } from "framer-motion";
 import { useMemo } from "react";
 import ActivityHeatmap from "@/components/ActivityHeatmap";
@@ -133,17 +133,33 @@ export default function DashboardPage() {
       {/* Streak & Today Status */}
       <div className="mb-6 grid grid-cols-2 gap-4">
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}>
-          <Card className="border-none bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-950/30 dark:to-amber-950/30">
-            <CardContent className="flex items-center gap-4 p-5">
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-accent text-accent-foreground">
-                <Flame className="h-6 w-6" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-foreground">{stats.streak}일</p>
-                <p className="text-sm text-muted-foreground">연속 학습</p>
-              </div>
-            </CardContent>
-          </Card>
+          {(() => {
+            const slime = stats.streak === 0 ? "😢"
+              : stats.streak === 1 ? "😶"
+              : stats.streak < 7  ? "😊"
+              : "👑";
+            const msg = stats.streak === 0 ? "오늘부터 다시!"
+              : stats.streak === 1 ? "시작이 반이에요"
+              : stats.streak < 7  ? "잘 하고 있어요!"
+              : "완전 진심이네요 🔥";
+            return (
+              <Card className="border-none bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-950/30 dark:to-amber-950/30">
+                <CardContent className="flex items-center gap-4 p-5">
+                  <motion.div
+                    animate={{ y: [0, -4, 0] }}
+                    transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }}
+                    className="flex h-12 w-12 items-center justify-center rounded-xl bg-accent/60 text-3xl select-none"
+                  >
+                    {slime}
+                  </motion.div>
+                  <div>
+                    <p className="text-2xl font-bold text-foreground">{stats.streak}일</p>
+                    <p className="text-sm text-muted-foreground">{msg}</p>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })()}
         </motion.div>
 
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>

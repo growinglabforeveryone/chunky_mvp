@@ -198,14 +198,21 @@ export default function ReviewPage() {
 
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
-        <div className="text-center space-y-3">
-          <p className="font-serif text-2xl font-semibold text-foreground">오늘 복습 완료 ✓</p>
-          {nextDue && (
-            <p className="text-sm text-muted-foreground">
-              다음 복습:{" "}
-              {new Date(nextDue.nextReviewAt!).toLocaleDateString("ko-KR", { month: "long", day: "numeric" })}
-            </p>
-          )}
+        <div className="text-center space-y-4">
+          <motion.div
+            animate={{ y: [0, -5, 0] }}
+            transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
+            className="text-5xl select-none"
+          >
+            😴
+          </motion.div>
+          <p className="font-serif text-2xl font-semibold text-foreground">오늘 할 건 다 했어요</p>
+          <p className="text-sm text-muted-foreground leading-relaxed">
+            {nextDue
+              ? `다음 복습은 ${new Date(nextDue.nextReviewAt!).toLocaleDateString("ko-KR", { month: "long", day: "numeric" })}이에요.`
+              : "잠깐 쉬어도 좋아요."}{" "}
+            <br />새 표현을 뽑아봐도 좋고요.
+          </p>
         </div>
       </div>
     );
@@ -214,9 +221,16 @@ export default function ReviewPage() {
   if (savedChunks.length === 0) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
-        <div className="text-center space-y-3">
-          <p className="font-serif text-xl text-foreground">아직 저장된 단어뭉치가 없습니다</p>
-          <p className="text-sm text-muted-foreground">추출 탭에서 텍스트를 분석하고 단어뭉치를 저장하세요</p>
+        <div className="text-center space-y-4">
+          <motion.div
+            animate={{ y: [0, -5, 0] }}
+            transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
+            className="text-5xl select-none"
+          >
+            😴
+          </motion.div>
+          <p className="font-serif text-xl text-foreground">아직 단어뭉치가 없어요</p>
+          <p className="text-sm text-muted-foreground">텍스트에서 표현을 뽑아볼까요?</p>
         </div>
       </div>
     );
