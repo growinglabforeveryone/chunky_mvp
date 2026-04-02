@@ -1,10 +1,11 @@
-import { useState, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useCallback, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useChunkStore } from "@/store/chunkStore";
 import { extractChunks, getMeaning } from "@/lib/claudeExtractor";
 import TextReader from "@/components/TextReader";
 import ChunkCard from "@/components/ChunkCard";
-import { Plus, Sparkles, Save, Loader2, ChevronDown } from "lucide-react";
+import { ONBOARDING_KEY } from "@/components/OnboardingWelcome";
+import { Plus, Sparkles, Save, Loader2, ChevronDown, X, MousePointerClick, Trash2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -34,6 +35,7 @@ export default function ExtractPage() {
   } = useChunkStore();
 
   const navigate = useNavigate();
+  const location = useLocation();
   const [loading, setLoading] = useState(false);
   const [pendingMiniCards, setPendingMiniCards] = useState<{ id: string; phrase: string }[]>([]);
   const [schedulingTomorrow, setSchedulingTomorrow] = useState(false);
@@ -47,7 +49,22 @@ export default function ExtractPage() {
   const [youtubeTranscript, setYoutubeTranscript] = useState("");
   const [loadingTranscript, setLoadingTranscript] = useState(false);
   const [activeTab, setActiveTab] = useState("text");
+  const EXTRACT_TIP_KEY = "chunky_extract_tip_seen";
+  const [showExtractTip, setShowExtractTip] = useState(
+    () => !localStorage.getItem(EXTRACT_TIP_KEY)
+  );
   const [youtubeError, setYoutubeError] = useState<string | null>(null);
+
+  // Accept sample text from onboarding navigation
+  useEffect(() => {
+    const state = location.state as { sampleText?: string } | null;
+    if (state?.sampleText) {
+      setInputText(state.sampleText);
+      setSourceName("이메일");
+      // Clear navigation state to prevent re-fill on back navigation
+      window.history.replaceState({}, "");
+    }
+  }, [location.state, setSourceName]);
 
   const handleExtract = useCallback(async () => {
     const textToExtract = activeTab === "youtube" ? youtubeTranscript : inputText;
@@ -115,6 +132,7 @@ export default function ExtractPage() {
     const toCommit = chunks.map((c) => ({ id: c.id, phrase: c.phrase }));
     try {
       await commitChunks();
+      localStorage.setItem(ONBOARDING_KEY, "true");
       setInputText("");
       setYoutubeTranscript("");
       setYoutubeUrl("");
@@ -303,7 +321,42 @@ export default function ExtractPage() {
           </button>
         </div>
       ) : (
-        <div className="flex gap-6">
+        <div className="space-y-4">
+          {/* Extract Tips (first time only) */}
+          <AnimatePresence>
+            {showExtractTip && (
+              <motion.div
+                initial={{ opacity: 0, y: -8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, height: 0, marginBottom: 0 }}
+                className="relative rounded-xl border border-primary/20 bg-primary/5 px-5 py-4"
+              >
+                <button
+                  aria-label="팁 닫기"
+                  onClick={() => {
+                    localStorage.setItem(EXTRACT_TIP_KEY, "true");
+                    setShowExtractTip(false);
+                  }}
+                  className="absolute right-3 top-3 rounded-md p-1 text-muted-foreground hover:bg-secondary hover:text-foreground"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+                <p className="mb-3 text-sm font-medium text-foreground">Tip</p>
+                <div className="flex flex-col gap-2 text-sm text-muted-foreground sm:flex-row sm:gap-6">
+                  <span className="flex items-center gap-2">
+                    <MousePointerClick className="h-4 w-4 shrink-0 text-primary" />
+                    원문에서 텍스트를 드래그하면 직접 표현을 추가할 수 있어요
+                  </span>
+                  <span className="flex items-center gap-2">
+                    <Trash2 className="h-4 w-4 shrink-0 text-primary" />
+                    필요 없는 표현은 카드의 삭제 버튼으로 빼세요
+                  </span>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          <div className="flex gap-6">
           {/* Left: Reader */}
           <div className="flex-[3] space-y-4">
             <div className="flex items-center justify-between">
@@ -387,6 +440,7 @@ export default function ExtractPage() {
               </AnimatePresence>
             </div>
           </div>
+        </div>
         </div>
       )}
 

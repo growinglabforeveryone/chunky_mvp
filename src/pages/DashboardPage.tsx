@@ -4,8 +4,9 @@ import { Progress } from "@/components/ui/progress";
 import { Link } from "react-router-dom";
 import { BookOpen, Library, Layers, Trophy, CheckCircle2, Circle } from "lucide-react";
 import { motion } from "framer-motion";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import ActivityHeatmap from "@/components/ActivityHeatmap";
+import OnboardingWelcome, { ONBOARDING_KEY } from "@/components/OnboardingWelcome";
 
 function isSameDay(d1: Date, d2: Date) {
   return d1.getFullYear() === d2.getFullYear() && d1.getMonth() === d2.getMonth() && d1.getDate() === d2.getDate();
@@ -53,6 +54,10 @@ const MOTIVATIONAL_COPIES = [
 export default function DashboardPage() {
   const { savedChunks, isLoadingSaved } = useChunkStore();
   const dailySubcopy = MOTIVATIONAL_COPIES[new Date().getDate() % MOTIVATIONAL_COPIES.length];
+
+  const [showOnboarding, setShowOnboarding] = useState(() => {
+    return !localStorage.getItem(ONBOARDING_KEY);
+  });
 
   const stats = useMemo(() => {
     const today = new Date();
@@ -275,6 +280,11 @@ export default function DashboardPage() {
           </Link>
         </div>
       </motion.div>
+
+      <OnboardingWelcome
+        open={showOnboarding && !isLoadingSaved && savedChunks.length === 0}
+        onClose={() => setShowOnboarding(false)}
+      />
     </div>
   );
 }
