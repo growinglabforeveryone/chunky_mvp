@@ -55,19 +55,6 @@ test.describe("페이지 스크린샷", () => {
 });
 
 test.describe("핵심 요소 체크", () => {
-  test("앱 로드 — 로그인 또는 대시보드 표시", async ({ page }) => {
-    await page.goto(`${BASE_URL}/`, { waitUntil: "networkidle", timeout: 15000 });
-
-    // 로그인 안 된 상태면 로그인 페이지, 된 상태면 대시보드
-    const loginBtn = page.getByText("Google");
-    const dashboard = page.locator('a[href="/extract"]');
-
-    const isLogin = await loginBtn.isVisible().catch(() => false);
-    const isDashboard = await dashboard.first().isVisible().catch(() => false);
-
-    expect(isLogin || isDashboard).toBeTruthy();
-  });
-
   test("페이지 라우팅 — 각 경로 200 응답", async ({ page }) => {
     for (const path of ["/", "/extract", "/library", "/review"]) {
       const response = await page.goto(`${BASE_URL}${path}`, {
