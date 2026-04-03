@@ -6,6 +6,7 @@ import { useEffect } from "react";
 import AppNav from "@/components/AppNav";
 import DashboardPage from "@/pages/DashboardPage";
 import ExtractPage from "@/pages/ExtractPage";
+import SpeakPage from "@/pages/SpeakPage";
 import ReviewPage from "@/pages/ReviewPage";
 import LibraryPage from "@/pages/LibraryPage";
 import LoginPage from "@/pages/LoginPage";
@@ -41,6 +42,7 @@ function AppContent() {
       <Routes>
         <Route path="/" element={<DashboardPage />} />
         <Route path="/extract" element={<ExtractPage />} />
+        <Route path="/speak" element={<SpeakPage />} />
         <Route path="/review" element={<ReviewPage />} />
         <Route path="/library" element={<LibraryPage />} />
         <Route path="*" element={<NotFound />} />
