@@ -203,11 +203,11 @@ export default function SpeakPage() {
 
           {/* Chunks Section */}
           {phase === "chunks" && (
-            <div className="flex gap-6 pt-2">
-              {/* Left: Corrected text with highlights */}
-              <div className="flex-[3] space-y-4">
+            <div className="flex flex-col gap-6 pt-2 md:flex-row">
+              {/* Left: Corrected text with highlights — mobile에서는 접을 수 있게 */}
+              <div className="space-y-4 md:flex-[3]">
                 <h3 className="text-sm font-medium text-muted-foreground">교정된 텍스트</h3>
-                <div className="rounded-xl border bg-card p-6 shadow-sm" style={{ maxWidth: "65ch" }}>
+                <div className="rounded-xl border bg-card p-4 shadow-sm sm:p-6" style={{ maxWidth: "65ch" }}>
                   <TextReader
                     text={correction?.corrected ?? ""}
                     chunks={chunks}
@@ -231,7 +231,7 @@ export default function SpeakPage() {
               </div>
 
               {/* Right: Chunk cards */}
-              <div className="flex-[2] space-y-4">
+              <div className="space-y-4 md:flex-[2]">
                 <div className="flex items-center justify-between">
                   <h3 className="text-sm font-medium text-muted-foreground">
                     추출된 표현{" "}

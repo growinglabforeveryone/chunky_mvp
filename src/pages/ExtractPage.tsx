@@ -356,9 +356,9 @@ export default function ExtractPage() {
             )}
           </AnimatePresence>
 
-          <div className="flex gap-6">
+          <div className="flex flex-col gap-6 md:flex-row">
           {/* Left: Reader */}
-          <div className="flex-[3] space-y-4">
+          <div className="space-y-4 md:flex-[3]">
             <div className="flex items-center justify-between">
               <h2 className="text-sm font-medium text-muted-foreground">
                 원문
@@ -376,7 +376,7 @@ export default function ExtractPage() {
                 새 텍스트
               </button>
             </div>
-            <div className="rounded-xl border bg-card p-6 shadow-sm" style={{ maxWidth: "65ch" }}>
+            <div className="rounded-xl border bg-card p-4 shadow-sm sm:p-6" style={{ maxWidth: "65ch" }}>
               <TextReader
                 text={sourceText}
                 chunks={chunks}
@@ -400,7 +400,7 @@ export default function ExtractPage() {
           </div>
 
           {/* Right: Inspector */}
-          <div className="flex-[2] space-y-4">
+          <div className="space-y-4 md:flex-[2]">
             <div className="flex items-center justify-between">
               <h2 className="text-sm font-medium text-muted-foreground">
                 추출된 표현{" "}
