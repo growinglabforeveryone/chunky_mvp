@@ -2,9 +2,10 @@ import { useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useChunkStore } from "@/store/chunkStore";
 import { correctText, extractChunks, getMeaning, CorrectionResult } from "@/lib/claudeExtractor";
+import { useSpeechRecognition } from "@/hooks/useSpeechRecognition";
 import TextReader from "@/components/TextReader";
 import ChunkCard from "@/components/ChunkCard";
-import { Plus, Mic, Save, Loader2, Sparkles, RotateCcw } from "lucide-react";
+import { Plus, Mic, MicOff, Save, Loader2, Sparkles, RotateCcw } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 
@@ -24,6 +25,11 @@ export default function SpeakPage() {
 
   const navigate = useNavigate();
   const [inputText, setInputText] = useState("");
+
+  const { isListening, isSupported: speechSupported, startListening, stopListening } =
+    useSpeechRecognition(
+      useCallback((text: string) => setInputText(text), []),
+    );
   const [correcting, setCorrecting] = useState(false);
   const [extracting, setExtracting] = useState(false);
   const [correction, setCorrection] = useState<CorrectionResult | null>(null);
@@ -116,14 +122,29 @@ export default function SpeakPage() {
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
               rows={8}
-              placeholder="영어로 자유롭게 말해보세요. iPhone 마이크 버튼을 눌러 음성으로 입력할 수도 있어요..."
-              className="w-full resize-none rounded-xl border bg-card p-6 font-serif text-lg leading-relaxed shadow-sm placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/20"
+              placeholder="영어로 자유롭게 말해보세요..."
+              className="w-full resize-none rounded-xl border bg-card p-6 pr-16 font-serif text-lg leading-relaxed shadow-sm placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/20"
             />
-            <div className="pointer-events-none absolute bottom-4 right-4 flex items-center gap-1.5 text-xs text-muted-foreground/40">
-              <Mic className="h-3.5 w-3.5" />
-              키보드 마이크로 음성 입력
-            </div>
+            {speechSupported && (
+              <button
+                type="button"
+                onClick={isListening ? stopListening : startListening}
+                className={`absolute bottom-4 right-4 rounded-full p-2.5 transition-colors ${
+                  isListening
+                    ? "bg-red-500 text-white animate-pulse"
+                    : "bg-secondary text-muted-foreground hover:bg-secondary/80 hover:text-foreground"
+                }`}
+                title={isListening ? "음성 인식 중지" : "음성으로 입력"}
+              >
+                {isListening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+              </button>
+            )}
           </div>
+          {isListening && (
+            <p className="text-center text-sm text-red-500 animate-pulse">
+              듣고 있어요... 말을 마치면 버튼을 눌러 중지하세요
+            </p>
+          )}
 
           <button
             onClick={handleCorrectAndExtract}
