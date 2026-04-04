@@ -1,4 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
+import { checkUsage, recordUsage } from "./_lib/checkUsage";
 
 export const config = { runtime: "edge" };
 
@@ -12,6 +13,11 @@ export default async function handler(req: Request): Promise<Response> {
   if (req.method !== "POST") {
     return new Response("Method not allowed", { status: 405 });
   }
+
+  // Usage check (free: 20/month)
+  const usageCheck = await checkUsage(req, "correct");
+  if ("response" in usageCheck) return usageCheck.response;
+  const { userId } = usageCheck.result;
 
   try {
     const { text } = await req.json();
@@ -65,6 +71,8 @@ ${text}`,
       .trim();
 
     const result = JSON.parse(jsonText);
+
+    await recordUsage(userId, "correct");
 
     return new Response(JSON.stringify(result), {
       headers: { "Content-Type": "application/json" },

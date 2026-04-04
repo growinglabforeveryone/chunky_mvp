@@ -12,6 +12,7 @@ import LibraryPage from "@/pages/LibraryPage";
 import LoginPage from "@/pages/LoginPage";
 import NotFound from "@/pages/NotFound";
 import { useChunkStore } from "@/store/chunkStore";
+import { useUsageStore } from "@/store/usageStore";
 import { useAuth } from "@/hooks/useAuth";
 
 const queryClient = new QueryClient();
@@ -19,10 +20,14 @@ const queryClient = new QueryClient();
 function AppContent() {
   const { session, loading } = useAuth();
   const loadSavedChunks = useChunkStore((s) => s.loadSavedChunks);
+  const loadUsage = useUsageStore((s) => s.loadUsage);
 
   useEffect(() => {
-    if (session) loadSavedChunks();
-  }, [session, loadSavedChunks]);
+    if (session) {
+      loadSavedChunks();
+      loadUsage();
+    }
+  }, [session, loadSavedChunks, loadUsage]);
 
   if (loading) {
     return (

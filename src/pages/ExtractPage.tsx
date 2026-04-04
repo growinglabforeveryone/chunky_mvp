@@ -1,7 +1,9 @@
 import { useState, useCallback, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { useChunkStore } from "@/store/chunkStore";
-import { extractChunks, getMeaning } from "@/lib/claudeExtractor";
+import { useChunkStore, VocabLimitError } from "@/store/chunkStore";
+import { useUsageStore, FREE_AI_LIMIT } from "@/store/usageStore";
+import { extractChunks, getMeaning, MonthlyLimitError } from "@/lib/claudeExtractor";
+import UpgradeModal from "@/components/UpgradeModal";
 import TextReader from "@/components/TextReader";
 import ChunkCard from "@/components/ChunkCard";
 import { ONBOARDING_KEY } from "@/components/OnboardingWelcome";
@@ -34,9 +36,12 @@ export default function ExtractPage() {
     scheduleTomorrow,
   } = useChunkStore();
 
+  const { tier, usedThisMonth, canUseAI, incrementUsage } = useUsageStore();
+
   const navigate = useNavigate();
   const location = useLocation();
   const [loading, setLoading] = useState(false);
+  const [upgradeModal, setUpgradeModal] = useState<{ reason: "ai_limit" | "vocab_limit"; used?: number; limit?: number } | null>(null);
   const [pendingMiniCards, setPendingMiniCards] = useState<{ id: string; phrase: string }[]>([]);
   const [schedulingTomorrow, setSchedulingTomorrow] = useState(false);
   const [hoveredChunkId, setHoveredChunkId] = useState<string | null>(null);
@@ -73,6 +78,7 @@ export default function ExtractPage() {
     setSourceText(textToExtract);
     try {
       const result = await extractChunks(textToExtract);
+      incrementUsage();
       // Attach source info for youtube
       if (activeTab === "youtube") {
         const enriched = result.map((c) => ({
@@ -86,6 +92,10 @@ export default function ExtractPage() {
       }
       toast.success(`${result.length}개의 단어뭉치를 추출했습니다`);
     } catch (err) {
+      if (err instanceof MonthlyLimitError) {
+        setUpgradeModal({ reason: "ai_limit", used: err.used, limit: err.limit });
+        return;
+      }
       console.error("Extract error:", err);
       toast.error("추출에 실패했습니다");
     } finally {
@@ -137,7 +147,11 @@ export default function ExtractPage() {
       setYoutubeTranscript("");
       setYoutubeUrl("");
       setPendingMiniCards(toCommit);
-    } catch {
+    } catch (err) {
+      if (err instanceof VocabLimitError) {
+        setUpgradeModal({ reason: "vocab_limit", used: err.current, limit: err.limit });
+        return;
+      }
       toast.error("저장에 실패했습니다. 다시 시도해주세요.");
     }
   };
@@ -307,18 +321,25 @@ export default function ExtractPage() {
             </AnimatePresence>
           </div>
 
-          <button
-            onClick={handleExtract}
-            disabled={loading || (activeTab === "text" ? !inputText.trim() : !youtubeTranscript.trim())}
-            className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3 font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
-          >
-            {loading ? (
-              <Loader2 className="h-5 w-5 animate-spin" />
-            ) : (
-              <Sparkles className="h-5 w-5" />
+          <div className="space-y-2">
+            <button
+              onClick={!canUseAI() ? () => setUpgradeModal({ reason: "ai_limit", used: usedThisMonth, limit: FREE_AI_LIMIT }) : handleExtract}
+              disabled={loading || (activeTab === "text" ? !inputText.trim() : !youtubeTranscript.trim())}
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3 font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
+            >
+              {loading ? (
+                <Loader2 className="h-5 w-5 animate-spin" />
+              ) : (
+                <Sparkles className="h-5 w-5" />
+              )}
+              {loading ? "추출 중..." : "단어뭉치 추출"}
+            </button>
+            {tier === "free" && (
+              <p className="text-center text-xs text-muted-foreground">
+                이번 달 {usedThisMonth}/{FREE_AI_LIMIT}회 사용
+              </p>
             )}
-            {loading ? "추출 중..." : "단어뭉치 추출"}
-          </button>
+          </div>
         </div>
       ) : (
         <div className="space-y-4">
@@ -442,6 +463,17 @@ export default function ExtractPage() {
           </div>
         </div>
         </div>
+      )}
+
+      {/* 업그레이드 모달 */}
+      {upgradeModal && (
+        <UpgradeModal
+          open
+          onClose={() => setUpgradeModal(null)}
+          reason={upgradeModal.reason}
+          used={upgradeModal.used}
+          limit={upgradeModal.limit}
+        />
       )}
 
       {/* 미니 세션 모달 */}

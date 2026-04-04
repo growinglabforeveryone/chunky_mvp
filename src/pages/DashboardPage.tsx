@@ -1,8 +1,9 @@
 import { useChunkStore } from "@/store/chunkStore";
+import { useUsageStore, FREE_AI_LIMIT, FREE_VOCAB_LIMIT } from "@/store/usageStore";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Link } from "react-router-dom";
-import { BookOpen, Library, Layers, Trophy, CheckCircle2, Circle } from "lucide-react";
+import { BookOpen, Library, Layers, Trophy, CheckCircle2, Circle, Sparkles } from "lucide-react";
 import { motion } from "framer-motion";
 import { useMemo, useState } from "react";
 import ActivityHeatmap from "@/components/ActivityHeatmap";
@@ -53,6 +54,7 @@ const MOTIVATIONAL_COPIES = [
 
 export default function DashboardPage() {
   const { savedChunks, isLoadingSaved } = useChunkStore();
+  const { tier, usedThisMonth, isLoaded: usageLoaded } = useUsageStore();
   const dailySubcopy = MOTIVATIONAL_COPIES[new Date().getDate() % MOTIVATIONAL_COPIES.length];
 
   const [showOnboarding, setShowOnboarding] = useState(() => {
@@ -253,6 +255,32 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
       </motion.div>
+
+      {/* AI Usage (free tier only) */}
+      {usageLoaded && tier === "free" && (
+        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.22 }}>
+          <Card className="mb-6">
+            <CardContent className="p-5">
+              <div className="mb-3 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="h-4 w-4 text-accent-foreground" />
+                  <span className="text-sm font-medium text-foreground">이번 달 AI 사용량</span>
+                </div>
+                <span className="text-sm font-semibold text-primary">{usedThisMonth}/{FREE_AI_LIMIT}회</span>
+              </div>
+              <Progress value={(usedThisMonth / FREE_AI_LIMIT) * 100} className="h-2.5" />
+              <div className="mt-2 flex items-center justify-between">
+                <p className="text-xs text-muted-foreground">
+                  단어장 {stats.active}/{FREE_VOCAB_LIMIT}개
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  매월 1일 초기화
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+      )}
 
       {/* Quick Actions */}
       <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}>

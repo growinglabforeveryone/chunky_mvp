@@ -1,6 +1,17 @@
 import { Chunk } from "@/types/chunk";
 import { create } from "zustand";
 import { supabase } from "@/lib/supabaseClient";
+import { useUsageStore, FREE_VOCAB_LIMIT } from "@/store/usageStore";
+
+export class VocabLimitError extends Error {
+  current: number;
+  limit: number;
+  constructor(current: number, limit: number) {
+    super("vocab_limit");
+    this.current = current;
+    this.limit = limit;
+  }
+}
 
 // 단계별 다음 복습까지 일수
 const STAGE_INTERVALS = [0, 1, 7, 30]; // stage 0→1: 1일, 1→2: 7일, 2→3: 30일
@@ -68,6 +79,15 @@ export const useChunkStore = create<ChunkStore>((set, get) => ({
     );
 
     if (newChunks.length === 0) return;
+
+    // Vocab limit check for free tier
+    const { tier } = useUsageStore.getState();
+    if (tier === "free") {
+      const activeCount = savedChunks.filter((c) => c.status === "active").length;
+      if (activeCount + newChunks.length > FREE_VOCAB_LIMIT) {
+        throw new VocabLimitError(activeCount, FREE_VOCAB_LIMIT);
+      }
+    }
 
     const { data: { user } } = await supabase.auth.getUser();
 

@@ -1,7 +1,9 @@
 import { useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { useChunkStore } from "@/store/chunkStore";
-import { correctText, extractChunks, getMeaning, CorrectionResult } from "@/lib/claudeExtractor";
+import { useChunkStore, VocabLimitError } from "@/store/chunkStore";
+import { useUsageStore, FREE_AI_LIMIT } from "@/store/usageStore";
+import { correctText, extractChunks, getMeaning, CorrectionResult, MonthlyLimitError } from "@/lib/claudeExtractor";
+import UpgradeModal from "@/components/UpgradeModal";
 import { useSpeechRecognition } from "@/hooks/useSpeechRecognition";
 import TextReader from "@/components/TextReader";
 import ChunkCard from "@/components/ChunkCard";
@@ -23,8 +25,11 @@ export default function SpeakPage() {
     scheduleTomorrow,
   } = useChunkStore();
 
+  const { tier, usedThisMonth, canUseAI, incrementUsage } = useUsageStore();
+
   const navigate = useNavigate();
   const [inputText, setInputText] = useState("");
+  const [upgradeModal, setUpgradeModal] = useState<{ reason: "ai_limit" | "vocab_limit"; used?: number; limit?: number } | null>(null);
 
   const { isListening, isSupported: speechSupported, startListening, stopListening } =
     useSpeechRecognition(
@@ -47,6 +52,7 @@ export default function SpeakPage() {
     try {
       // Step 1: Correct
       const result = await correctText(inputText);
+      incrementUsage();
       setCorrection(result);
       corrected = true;
 
@@ -57,6 +63,7 @@ export default function SpeakPage() {
       setSourceName("Speaking");
 
       const extracted = await extractChunks(result.corrected);
+      incrementUsage();
       const enriched = extracted.map((c) => ({
         ...c,
         sourceType: "text" as const,
@@ -64,6 +71,10 @@ export default function SpeakPage() {
       setChunks(enriched);
       toast.success(`교정 완료! ${enriched.length}개 단어뭉치를 추출했습니다`);
     } catch (err) {
+      if (err instanceof MonthlyLimitError) {
+        setUpgradeModal({ reason: "ai_limit", used: err.used, limit: err.limit });
+        return;
+      }
       console.error("Correct & extract error:", err);
       if (corrected) {
         toast.error("단어뭉치 추출에 실패했습니다. 교정 결과는 확인할 수 있어요");
@@ -99,7 +110,11 @@ export default function SpeakPage() {
     try {
       await commitChunks();
       setPendingMiniCards(toCommit);
-    } catch {
+    } catch (err) {
+      if (err instanceof VocabLimitError) {
+        setUpgradeModal({ reason: "vocab_limit", used: err.current, limit: err.limit });
+        return;
+      }
       toast.error("저장에 실패했습니다. 다시 시도해주세요.");
     }
   };
@@ -146,18 +161,25 @@ export default function SpeakPage() {
             </p>
           )}
 
-          <button
-            onClick={handleCorrectAndExtract}
-            disabled={correcting || extracting || !inputText.trim()}
-            className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3 font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
-          >
-            {correcting || extracting ? (
-              <Loader2 className="h-5 w-5 animate-spin" />
-            ) : (
-              <Sparkles className="h-5 w-5" />
+          <div className="space-y-2">
+            <button
+              onClick={!canUseAI() ? () => setUpgradeModal({ reason: "ai_limit", used: usedThisMonth, limit: FREE_AI_LIMIT }) : handleCorrectAndExtract}
+              disabled={correcting || extracting || !inputText.trim()}
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3 font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
+            >
+              {correcting || extracting ? (
+                <Loader2 className="h-5 w-5 animate-spin" />
+              ) : (
+                <Sparkles className="h-5 w-5" />
+              )}
+              {correcting ? "교정 중..." : extracting ? "단어뭉치 추출 중..." : "교정 + 단어뭉치 추출"}
+            </button>
+            {tier === "free" && (
+              <p className="text-center text-xs text-muted-foreground">
+                이번 달 {usedThisMonth}/{FREE_AI_LIMIT}회 사용 (교정+추출 = 2회 차감)
+              </p>
             )}
-            {correcting ? "교정 중..." : extracting ? "단어뭉치 추출 중..." : "교정 + 단어뭉치 추출"}
-          </button>
+          </div>
         </div>
       )}
 
@@ -295,6 +317,17 @@ export default function SpeakPage() {
             </div>
           )}
         </div>
+      )}
+
+      {/* 업그레이드 모달 */}
+      {upgradeModal && (
+        <UpgradeModal
+          open
+          onClose={() => setUpgradeModal(null)}
+          reason={upgradeModal.reason}
+          used={upgradeModal.used}
+          limit={upgradeModal.limit}
+        />
       )}
 
       {/* Mini Session Modal (same as ExtractPage) */}
