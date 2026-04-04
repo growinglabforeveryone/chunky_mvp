@@ -72,6 +72,9 @@ export default function SpeakPage() {
       toast.success(`교정 완료! ${enriched.length}개 단어뭉치를 추출했습니다`);
     } catch (err) {
       if (err instanceof MonthlyLimitError) {
+        if (corrected) {
+          toast.info("교정은 완료했지만, 추출은 월 한도에 도달했어요");
+        }
         setUpgradeModal({ reason: "ai_limit", used: err.used, limit: err.limit });
         return;
       }

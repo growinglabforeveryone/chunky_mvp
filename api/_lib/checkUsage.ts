@@ -96,11 +96,12 @@ export async function checkUsage(
 
 /**
  * Record an AI usage event. Call AFTER successful API response.
+ * Uses service role key to bypass RLS.
  */
 export async function recordUsage(userId: string, endpoint: string) {
   const supabase = createClient(
     process.env.SUPABASE_URL!,
-    process.env.SUPABASE_ANON_KEY!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY!,
   );
 
   await supabase.from("ai_usage").insert({
