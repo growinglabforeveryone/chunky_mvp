@@ -1,6 +1,8 @@
-import { BookOpen, Home, Layers, Library, LogOut, MessageCircle } from "lucide-react";
+import { BookOpen, Home, Layers, Library, LogOut, MessageCircle, MessageSquarePlus } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
+import { useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
+import FeedbackModal from "@/components/FeedbackModal";
 
 const navItems = [
   { to: "/", label: "홈", icon: Home },
@@ -12,6 +14,7 @@ const navItems = [
 
 export default function AppNav() {
   const { pathname } = useLocation();
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -48,14 +51,24 @@ export default function AppNav() {
           </nav>
 
           <button
-            onClick={handleLogout}
+            onClick={() => setFeedbackOpen(true)}
             className="ml-1 rounded-lg p-1.5 text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+            title="피드백"
+          >
+            <MessageSquarePlus className="h-4 w-4" />
+          </button>
+
+          <button
+            onClick={handleLogout}
+            className="rounded-lg p-1.5 text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
             title="로그아웃"
           >
             <LogOut className="h-4 w-4" />
           </button>
         </div>
       </div>
+
+      <FeedbackModal open={feedbackOpen} onClose={() => setFeedbackOpen(false)} />
     </header>
   );
 }

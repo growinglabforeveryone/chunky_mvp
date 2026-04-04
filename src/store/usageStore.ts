@@ -7,25 +7,28 @@ export const FREE_VOCAB_LIMIT = 200;
 interface UsageStore {
   tier: "free" | "premium";
   usedThisMonth: number;
+  tipSeen: boolean;
   isLoaded: boolean;
   loadUsage: () => Promise<void>;
   incrementUsage: () => void;
   canUseAI: () => boolean;
+  markTipSeen: () => Promise<void>;
 }
 
 export const useUsageStore = create<UsageStore>((set, get) => ({
   tier: "free",
   usedThisMonth: 0,
+  tipSeen: false,
   isLoaded: false,
 
   loadUsage: async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
-    // Get tier
+    // Get tier + tip_seen
     const { data: profile } = await supabase
       .from("profiles")
-      .select("tier")
+      .select("tier, tip_seen")
       .eq("id", user.id)
       .single();
 
@@ -42,6 +45,7 @@ export const useUsageStore = create<UsageStore>((set, get) => ({
     set({
       tier: (profile?.tier ?? "free") as "free" | "premium",
       usedThisMonth: count ?? 0,
+      tipSeen: profile?.tip_seen ?? false,
       isLoaded: true,
     });
   },
@@ -54,5 +58,15 @@ export const useUsageStore = create<UsageStore>((set, get) => ({
     const { tier, usedThisMonth } = get();
     if (tier === "premium") return true;
     return usedThisMonth < FREE_AI_LIMIT;
+  },
+
+  markTipSeen: async () => {
+    set({ tipSeen: true });
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    await supabase
+      .from("profiles")
+      .update({ tip_seen: true })
+      .eq("id", user.id);
   },
 }));

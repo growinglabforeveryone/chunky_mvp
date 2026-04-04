@@ -7,10 +7,9 @@ import UpgradeModal from "@/components/UpgradeModal";
 import TextReader from "@/components/TextReader";
 import ChunkCard from "@/components/ChunkCard";
 import { ONBOARDING_KEY } from "@/components/OnboardingWelcome";
-import { Plus, Sparkles, Save, Loader2, ChevronDown, X, MousePointerClick, Trash2 } from "lucide-react";
+import { Plus, Sparkles, Save, Loader2, ChevronDown, X, MousePointerClick, Trash2, Pencil } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
 const SOURCE_PRESETS = [
   { label: "📧 이메일", value: "이메일" },
@@ -49,16 +48,7 @@ export default function ExtractPage() {
   const [showSource, setShowSource] = useState(false);
   const [customSource, setCustomSource] = useState("");
 
-  // YouTube tab state
-  const [youtubeUrl, setYoutubeUrl] = useState("");
-  const [youtubeTranscript, setYoutubeTranscript] = useState("");
-  const [loadingTranscript, setLoadingTranscript] = useState(false);
-  const [activeTab, setActiveTab] = useState("text");
-  const EXTRACT_TIP_KEY = "chunky_extract_tip_seen";
-  const [showExtractTip, setShowExtractTip] = useState(
-    () => !localStorage.getItem(EXTRACT_TIP_KEY)
-  );
-  const [youtubeError, setYoutubeError] = useState<string | null>(null);
+  const { tipSeen, markTipSeen } = useUsageStore();
 
   // Accept sample text from onboarding navigation
   useEffect(() => {
@@ -72,24 +62,13 @@ export default function ExtractPage() {
   }, [location.state, setSourceName]);
 
   const handleExtract = useCallback(async () => {
-    const textToExtract = activeTab === "youtube" ? youtubeTranscript : inputText;
-    if (!textToExtract.trim()) return;
+    if (!inputText.trim()) return;
     setLoading(true);
-    setSourceText(textToExtract);
+    setSourceText(inputText);
     try {
-      const result = await extractChunks(textToExtract);
+      const result = await extractChunks(inputText);
       incrementUsage();
-      // Attach source info for youtube
-      if (activeTab === "youtube") {
-        const enriched = result.map((c) => ({
-          ...c,
-          sourceUrl: youtubeUrl,
-          sourceType: "youtube" as const,
-        }));
-        setChunks(enriched);
-      } else {
-        setChunks(result);
-      }
+      setChunks(result);
       toast.success(`${result.length}개의 단어뭉치를 추출했습니다`);
     } catch (err) {
       if (err instanceof MonthlyLimitError) {
@@ -101,31 +80,7 @@ export default function ExtractPage() {
     } finally {
       setLoading(false);
     }
-  }, [activeTab, inputText, youtubeTranscript, youtubeUrl, setSourceText, setChunks]);
-
-  const handleFetchTranscript = async () => {
-    if (!youtubeUrl.trim()) return;
-    setLoadingTranscript(true);
-    setYoutubeError(null);
-    try {
-      const res = await fetch("/api/youtube-transcript", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url: youtubeUrl }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        setYoutubeError(data.error || "자막을 가져올 수 없습니다");
-        return;
-      }
-      setYoutubeTranscript(data.transcript);
-      toast.success("자막을 불러왔습니다");
-    } catch {
-      setYoutubeError("자막을 가져올 수 없습니다");
-    } finally {
-      setLoadingTranscript(false);
-    }
-  };
+  }, [inputText, setSourceText, setChunks, incrementUsage]);
 
   const handleAddChunk = () => {
     addChunk({
@@ -144,8 +99,6 @@ export default function ExtractPage() {
       await commitChunks();
       localStorage.setItem(ONBOARDING_KEY, "true");
       setInputText("");
-      setYoutubeTranscript("");
-      setYoutubeUrl("");
       setPendingMiniCards(toCommit);
     } catch (err) {
       if (err instanceof VocabLimitError) {
@@ -171,79 +124,13 @@ export default function ExtractPage() {
             </p>
           </div>
 
-          <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="w-full">
-              <TabsTrigger value="text" className="flex-1">📝 텍스트</TabsTrigger>
-              <TabsTrigger value="youtube" className="flex-1">▶️ 유튜브</TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="text" className="space-y-4">
-              <textarea
-                value={inputText}
-                onChange={(e) => setInputText(e.target.value)}
-                rows={12}
-                placeholder="영어 기사, 이메일, 또는 텍스트를 여기에 붙여넣으세요..."
-                className="w-full resize-none rounded-xl border bg-card p-6 font-serif text-lg leading-relaxed shadow-sm placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/20"
-              />
-            </TabsContent>
-
-            <TabsContent value="youtube" className="space-y-4">
-              <div className="flex gap-2">
-                <input
-                  value={youtubeUrl}
-                  onChange={(e) => { setYoutubeUrl(e.target.value); setYoutubeError(null); }}
-                  placeholder="https://youtube.com/watch?v=..."
-                  className="flex-1 rounded-xl border bg-card px-4 py-3 text-sm shadow-sm placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/20"
-                />
-                <button
-                  onClick={handleFetchTranscript}
-                  disabled={loadingTranscript || !youtubeUrl.trim()}
-                  className="flex shrink-0 items-center gap-2 rounded-xl border bg-card px-4 py-3 text-sm font-medium text-foreground shadow-sm transition-colors hover:bg-secondary disabled:opacity-50"
-                >
-                  {loadingTranscript ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-                  자막 불러오기
-                </button>
-              </div>
-
-              {youtubeError && (
-                <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm dark:border-amber-800 dark:bg-amber-950/30">
-                  <p className="font-medium text-amber-800 dark:text-amber-300">자막을 자동으로 가져올 수 없어요</p>
-                  <p className="mt-1 text-amber-700 dark:text-amber-400">YouTube가 서버 요청을 차단하고 있습니다. 아래 방법으로 직접 붙여넣기 해주세요.</p>
-                  <ol className="mt-2 list-decimal pl-4 text-amber-700 dark:text-amber-400 space-y-1">
-                    <li>YouTube에서 영상 하단 <strong>···</strong> 메뉴 클릭</li>
-                    <li><strong>스크립트 열기</strong> (Show transcript) 선택</li>
-                    <li>전체 텍스트 복사 후 아래에 붙여넣기</li>
-                  </ol>
-                  {youtubeUrl && (
-                    <a
-                      href={youtubeUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="mt-2 inline-block text-xs text-amber-600 underline hover:text-amber-800"
-                    >
-                      영상 열기 →
-                    </a>
-                  )}
-                  <textarea
-                    rows={8}
-                    placeholder="여기에 자막 텍스트를 붙여넣으세요..."
-                    className="mt-3 w-full resize-none rounded-lg border bg-white px-3 py-2 text-sm text-foreground shadow-sm placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/20 dark:bg-card"
-                    onChange={(e) => setYoutubeTranscript(e.target.value)}
-                  />
-                </div>
-              )}
-
-              {!youtubeError && youtubeTranscript && (
-                <textarea
-                  value={youtubeTranscript}
-                  onChange={(e) => setYoutubeTranscript(e.target.value)}
-                  rows={12}
-                  placeholder="자막이 여기에 표시됩니다..."
-                  className="w-full resize-none rounded-xl border bg-card p-6 font-serif text-lg leading-relaxed shadow-sm placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/20"
-                />
-              )}
-            </TabsContent>
-          </Tabs>
+          <textarea
+            value={inputText}
+            onChange={(e) => setInputText(e.target.value)}
+            rows={12}
+            placeholder="영어 기사, 이메일, 또는 텍스트를 여기에 붙여넣으세요..."
+            className="w-full resize-none rounded-xl border bg-card p-6 font-serif text-lg leading-relaxed shadow-sm placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/20"
+          />
 
           {/* 출처 선택 (선택사항) */}
           <div className="space-y-3">
@@ -324,7 +211,7 @@ export default function ExtractPage() {
           <div className="space-y-2">
             <button
               onClick={!canUseAI() ? () => setUpgradeModal({ reason: "ai_limit", used: usedThisMonth, limit: FREE_AI_LIMIT }) : handleExtract}
-              disabled={loading || (activeTab === "text" ? !inputText.trim() : !youtubeTranscript.trim())}
+              disabled={loading || !inputText.trim()}
               className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3 font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
             >
               {loading ? (
@@ -343,9 +230,9 @@ export default function ExtractPage() {
         </div>
       ) : (
         <div className="space-y-4">
-          {/* Extract Tips (first time only) */}
+          {/* Extract Tips (first time only, per user) */}
           <AnimatePresence>
-            {showExtractTip && (
+            {!tipSeen && (
               <motion.div
                 initial={{ opacity: 0, y: -8 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -354,10 +241,7 @@ export default function ExtractPage() {
               >
                 <button
                   aria-label="팁 닫기"
-                  onClick={() => {
-                    localStorage.setItem(EXTRACT_TIP_KEY, "true");
-                    setShowExtractTip(false);
-                  }}
+                  onClick={() => markTipSeen()}
                   className="absolute right-3 top-3 rounded-md p-1 text-muted-foreground hover:bg-secondary hover:text-foreground"
                 >
                   <X className="h-4 w-4" />
@@ -369,8 +253,12 @@ export default function ExtractPage() {
                     원문에서 텍스트를 드래그하면 직접 표현을 추가할 수 있어요
                   </span>
                   <span className="flex items-center gap-2">
+                    <Pencil className="h-4 w-4 shrink-0 text-primary" />
+                    뽑힌 단어뭉치는 카드에서 직접 수정할 수 있어요
+                  </span>
+                  <span className="flex items-center gap-2">
                     <Trash2 className="h-4 w-4 shrink-0 text-primary" />
-                    필요 없는 표현은 카드의 삭제 버튼으로 빼세요
+                    필요 없는 표현은 삭제 버튼으로 빼세요
                   </span>
                 </div>
               </motion.div>
@@ -389,8 +277,6 @@ export default function ExtractPage() {
                   setChunks([]);
                   setSourceText("");
                   setInputText("");
-                  setYoutubeTranscript("");
-                  setYoutubeUrl("");
                 }}
                 className="text-sm text-muted-foreground hover:text-foreground"
               >
