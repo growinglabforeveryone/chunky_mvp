@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect } from "react";
 import { useChunkStore } from "@/store/chunkStore";
 import { Chunk } from "@/types/chunk";
 import { motion, AnimatePresence } from "framer-motion";
-import { RotateCcw, Shuffle, X, Check, ChevronDown, MinusCircle } from "lucide-react";
+import { RotateCcw, Shuffle, X, Check, ChevronDown, MinusCircle, MessageCircle, Send } from "lucide-react";
 import { toast } from "sonner";
 import { findRelatedPhrases } from "@/utils/relatedPhrases";
 
@@ -33,6 +33,11 @@ export default function ReviewPage() {
   const [shuffled, setShuffled] = useState(false);
   const [relatedOpen, setRelatedOpen] = useState(false);
   const [isComplete, setIsComplete] = useState(false);
+
+  const [askAIOpen, setAskAIOpen] = useState(false);
+  const [askAIInput, setAskAIInput] = useState("");
+  const [askAIAnswer, setAskAIAnswer] = useState("");
+  const [askAILoading, setAskAILoading] = useState(false);
 
   const dueCards = useMemo(() => {
     const today = new Date();
@@ -74,10 +79,37 @@ export default function ReviewPage() {
   const advance = (newQueue: Chunk[]) => {
     setIsFlipped(false);
     setRelatedOpen(false);
+    setAskAIOpen(false);
+    setAskAIInput("");
+    setAskAIAnswer("");
     setTimeout(() => {
       setSessionQueue(newQueue);
       if (newQueue.length === 0) setIsComplete(true);
     }, 150);
+  };
+
+  const handleAskAI = async () => {
+    if (!current || !askAIInput.trim() || askAILoading) return;
+    setAskAILoading(true);
+    setAskAIAnswer("");
+    try {
+      const res = await fetch("/api/ask-ai", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          phrase: current.phrase,
+          meaning: current.meaning,
+          example: current.exampleSentence,
+          userQuestion: askAIInput.trim(),
+        }),
+      });
+      const data = await res.json();
+      setAskAIAnswer(data.answer ?? "응답을 불러올 수 없어요.");
+    } catch {
+      setAskAIAnswer("오류가 발생했어요. 다시 시도해주세요.");
+    } finally {
+      setAskAILoading(false);
+    }
   };
 
   const handleKnew = async () => {
@@ -342,13 +374,14 @@ export default function ReviewPage() {
               </button>
             </div>
 
-            {/* 혼동 표현 */}
-            {current.commonConfusions && (
-              <div className="mt-4 w-full rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-left" onClick={(e) => e.stopPropagation()}>
-                <p className="text-xs font-semibold text-amber-800 mb-1">헷갈리기 쉬운 표현</p>
-                <p className="text-xs text-amber-700 leading-relaxed">{current.commonConfusions}</p>
-              </div>
-            )}
+            {/* Ask AI 버튼 */}
+            <button
+              onClick={(e) => { e.stopPropagation(); setAskAIOpen((o) => !o); setAskAIAnswer(""); setAskAIInput(""); }}
+              className="mt-4 flex items-center gap-1.5 text-xs text-muted-foreground/60 hover:text-primary transition-colors"
+            >
+              <MessageCircle className="h-3.5 w-3.5" />
+              AI에게 물어보기
+            </button>
 
             {/* 제외 버튼 */}
             <button
@@ -361,6 +394,46 @@ export default function ReviewPage() {
           </div>
         </motion.div>
       </div>
+
+      {/* Ask AI 패널 */}
+      <AnimatePresence>
+        {isFlipped && askAIOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: 4 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 4 }}
+            transition={{ duration: 0.2 }}
+            className="mt-4 rounded-xl border bg-card p-4 space-y-3"
+          >
+            <div className="flex gap-2">
+              <textarea
+                value={askAIInput}
+                onChange={(e) => setAskAIInput(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleAskAI(); } }}
+                placeholder={`"${current.phrase}" 관련해서 궁금한 점을 입력하세요`}
+                rows={2}
+                className="flex-1 resize-none rounded-lg border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+              />
+              <button
+                onClick={handleAskAI}
+                disabled={askAILoading || !askAIInput.trim()}
+                className="self-end rounded-lg bg-primary px-3 py-2 text-primary-foreground disabled:opacity-40 transition-opacity"
+              >
+                {askAILoading ? (
+                  <span className="text-xs">...</span>
+                ) : (
+                  <Send className="h-4 w-4" />
+                )}
+              </button>
+            </div>
+            {askAIAnswer && (
+              <div className="rounded-lg bg-secondary/50 px-4 py-3 text-sm leading-relaxed text-foreground whitespace-pre-wrap">
+                {askAIAnswer}
+              </div>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* 비슷한 표현 */}
       <AnimatePresence>

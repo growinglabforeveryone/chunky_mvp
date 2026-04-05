@@ -8,7 +8,6 @@ interface RawChunk {
   korean_meaning: string;
   example_sentence: string;
   reuse_example: string;
-  common_confusions: string;
 }
 
 export default async function handler(req: Request): Promise<Response> {
@@ -69,25 +68,9 @@ Return ONLY a valid JSON array (no explanation, no markdown):
     "word_phrase": "are split between",
     "korean_meaning": "~와 ~ 사이에서 의견이 갈리다",
     "example_sentence": "The exact sentence from the text where this chunk appears.",
-    "reuse_example": "Experts are split between optimism and caution.",
-    "common_confusions": "❌ are divided on (이유: 'split'은 between과 짝을 이루지만 'divided'는 on과 짝을 이룸 — 동사가 바뀌면 전치사도 바뀜). 예: Experts are divided on whether AI will replace jobs."
+    "reuse_example": "Experts are split between optimism and caution."
   }
 ]
-
-For common_confusions: identify the single most impactful English expression a Korean business professional would MISTAKENLY use instead of this chunk.
-
-Target these error types (in priority order):
-1. Wrong word choice — a near-synonym that SOUNDS right but has wrong register/collocation/nuance for this context (e.g. "crucial moment" vs "critical moment": crucial=성공·전환점 느낌, critical=위기·긴박함 느낌)
-2. Wrong preposition — the preposition Korean learners commonly get wrong with this verb/noun pattern
-3. Plausible paraphrase from Korean literal translation that a native speaker wouldn't use
-
-DO NOT flag:
-- Article differences (a/the) — not a meaningful learning target
-- Synonyms that are equally natural in the same context
-- Expressions that are technically correct alternatives
-
-Format: "❌ [English wrong expression] (이유: Korean explanation of the nuance/collocation difference). 예: English sentence using the confusable expression."
-Provide exactly 1 confusion — the most impactful one. Keep it under 70 words. If no meaningful confusion exists, use "".
 
 Text to analyze:
 ${text}`,
@@ -116,7 +99,6 @@ ${text}`,
         meaning: item.korean_meaning,
         exampleSentence: item.example_sentence,
         reuseExample: item.reuse_example,
-        commonConfusions: item.common_confusions || undefined,
         sourceText: text.slice(0, 300),
         createdAt: new Date().toISOString(),
       }));

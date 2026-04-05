@@ -15,7 +15,6 @@ export interface Chunk {
   nextReviewAt?: string;
   lastReviewedAt?: string;
   status?: ChunkStatus;
-  commonConfusions?: string;
   createdAt: string;
 }
 

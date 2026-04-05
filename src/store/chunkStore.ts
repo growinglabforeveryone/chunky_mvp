@@ -99,7 +99,6 @@ export const useChunkStore = create<ChunkStore>((set, get) => ({
       reuse_example: c.reuseExample ?? null,
       source_text: c.sourceText ?? null,
       source_name: sourceName || null,
-      common_confusions: c.commonConfusions ?? null,
       created_at: c.createdAt,
       review_stage: 0,
       next_review_at: null,
@@ -295,7 +294,6 @@ export const useChunkStore = create<ChunkStore>((set, get) => ({
       nextReviewAt: row.next_review_at ?? undefined,
       lastReviewedAt: row.last_reviewed_at ?? undefined,
       status: (row.status ?? "active") as "active" | "mastered" | "excluded",
-      commonConfusions: row.common_confusions ?? undefined,
       createdAt: row.created_at,
     }));
 
