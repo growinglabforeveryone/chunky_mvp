@@ -1,4 +1,4 @@
-import { BookOpen, Home, Layers, Library, LogOut, MessageCircle, MessageSquarePlus } from "lucide-react";
+import { BookOpen, Headphones, Home, Layers, Library, LogOut, MessageCircle, MessageSquarePlus } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
@@ -8,6 +8,7 @@ const navItems = [
   { to: "/", label: "홈", icon: Home },
   { to: "/extract", label: "읽기", icon: Layers },
   { to: "/speak", label: "말하기", icon: MessageCircle },
+  { to: "/listen", label: "듣기", icon: Headphones },
   { to: "/review", label: "복습", icon: BookOpen },
   { to: "/library", label: "라이브러리", icon: Library },
 ];

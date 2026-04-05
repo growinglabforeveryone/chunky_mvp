@@ -8,6 +8,7 @@ import DashboardPage from "@/pages/DashboardPage";
 import ExtractPage from "@/pages/ExtractPage";
 import SpeakPage from "@/pages/SpeakPage";
 import ReviewPage from "@/pages/ReviewPage";
+import ListenPage from "@/pages/ListenPage";
 import LibraryPage from "@/pages/LibraryPage";
 import LandingPage from "@/pages/LandingPage";
 import NotFound from "@/pages/NotFound";
@@ -48,6 +49,7 @@ function AppContent() {
         <Route path="/" element={<DashboardPage />} />
         <Route path="/extract" element={<ExtractPage />} />
         <Route path="/speak" element={<SpeakPage />} />
+        <Route path="/listen" element={<ListenPage />} />
         <Route path="/review" element={<ReviewPage />} />
         <Route path="/library" element={<LibraryPage />} />
         <Route path="*" element={<NotFound />} />
