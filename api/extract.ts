@@ -10,31 +10,41 @@ interface RawChunk {
   reuse_example: string;
 }
 
-const PROMPT = (text: string) => `You are an English vocabulary chunk extractor for Korean learners.
+const PROMPT = (text: string) => `You are an expert English vocabulary chunk extractor for Korean business professionals.
 
-From the given English text, extract 3~5 useful "word chunks" — 2-5 word phrases that serve as reusable grammatical frames.
+Extract 3~5 word chunks from the text. A chunk is a 2-5 word phrase a Korean learner should memorize as a unit.
 
-Rules:
-- ONLY extract phrases that appear VERBATIM in the text — exact characters, tense, spelling, word form
-- DO NOT modify word forms (e.g. "entering" → "entered")
-- DO NOT extract single words or full sentences
-- The word_phrase must be 2-5 consecutive words exactly as they appear in the text
-- DO NOT include the grammatical subject (e.g. extract "is built for", NOT "the world is built for")
-- DO NOT end a chunk with an article (a, an, the)
-- Ending with a preposition IS fine: "looking forward to", "face a mix of", "gap between" are valid
-- DO NOT include topic-specific content nouns at the end when they reduce reusability
-- The chunk must be a genuine reusable building block: verb collocation, prepositional phrase, fixed expression, or noun phrase pattern
-- Focus on chunks useful for professional/work contexts
+TARGET QUALITY — these are examples of GOOD chunks (B2-C1 level):
+"force someone to abandon", "financial toll", "spark creativity", "with a range of perspectives",
+"backed by", "marking a major step forward in", "raise serious questions about",
+"face regulatory hurdles", "hail A as a breakthrough", "weather the storm",
+"coincides with", "reportedly in talks", "are split between", "in the wake of"
 
-For korean_meaning: translate ONLY the chunk itself.
+Notice: these are collocations, fixed expressions, or prepositional frames — not random word sequences.
 
-Return ONLY a valid JSON array (no explanation, no markdown):
+STRICT RULES:
+1. VERBATIM only — exact words, tense, spelling as they appear in the text
+2. NO single words, NO full sentences
+3. B2-C1 difficulty — REJECT trivially easy phrases made of only basic vocabulary
+   BAD: "thank you very", "how much you", "learned from him", "think about that"
+   These fail because any beginner already knows every word and the combination
+4. NO grammatical subject at the start ("the world is built for" → use "is built for")
+5. NO article (a/an/the) at the END — "was given a" is WRONG; use "was given" or extend to next noun
+6. DO NOT end with a topic-specific content noun that kills reusability
+   BAD: "championing education, medical" — comma mid-phrase, too topic-specific
+   GOOD: "championing education" or just pick a cleaner chunk
+7. Prioritize: verb+noun collocations, prepositional frames, fixed idioms, passive constructions
+8. Focus on expressions useful across professional contexts
+
+For korean_meaning: translate ONLY the chunk, no extra words.
+
+Return ONLY a valid JSON array (no markdown):
 [
   {
-    "word_phrase": "are split between",
-    "korean_meaning": "~와 ~ 사이에서 의견이 갈리다",
+    "word_phrase": "raise serious questions about",
+    "korean_meaning": "~에 대해 심각한 의문을 제기하다",
     "example_sentence": "The exact sentence from the text where this chunk appears.",
-    "reuse_example": "Experts are split between optimism and caution."
+    "reuse_example": "The scandal raised serious questions about corporate governance."
   }
 ]
 
@@ -100,7 +110,7 @@ export default async function handler(req: Request): Promise<Response> {
     if (!text) throw new Error("empty text");
 
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
     // 1200자씩 최대 4구간 균등 분배 → 병렬 추출
     const SEGMENT_CHARS = 1200;
