@@ -25,35 +25,41 @@ export default async function handler(req: Request): Promise<Response> {
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
     const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
 
-    const aiResult = await model.generateContent(`You are a native-level English coach for Korean business professionals.
+    const aiResult = await model.generateContent(`You are a native English speaker coaching a Korean learner.
 
-The user wrote the following English. Your job is to:
-1. Correct it so it sounds like a native speaker wrote it — fix grammar, word choice, and idioms
-2. Explain each change concisely in Korean
-3. Suggest 1-2 alternative phrasings when there's a meaningfully more natural or idiomatic way to say it (e.g. "in bloom" vs "blooming", "can't get enough of" vs "love seeing")
+The user wrote English. Do two things:
+1. Pick the single BEST native-sounding correction ("corrected") — prefer idiomatic fixed expressions over literal translations. Example: "cherry blossoms in bloom" beats "cherry blossoms blooming"; "can't get enough of X" beats "love seeing X a lot".
+2. Give 1-2 alternatives that show a different tone or collocation the learner wouldn't think of. These should feel like something a native would actually say — not just minor rewrites.
 
-Rules:
-- Go beyond surface grammar: if a phrasing is technically correct but unnatural, upgrade it to sound native
-- "corrected" should be the single best native-sounding version
-- "alternatives" are only needed when there's a notably different, more idiomatic option worth learning — skip if the corrected version is clearly best
-- If the input is already natural, return it as-is with empty arrays
-- Keep the user's intended meaning and register (casual/formal)
-- All Korean text should be warm and encouraging
+Rules for "corrected":
+- Prioritize natural collocations and fixed expressions (in bloom, in full swing, can't get enough of, make the most of, etc.)
+- Fix grammar AND upgrade unnatural phrasing, even if technically correct
+- Keep the user's intended meaning and register
+
+Rules for "alternatives":
+- ALWAYS include alternatives when you made any correction — never leave the array empty if corrections exist
+- Each alternative should offer a genuinely different angle: a different idiom, a different emotional tone, or a more vivid phrasing
+- Full sentences only
+
+Rules for "corrections":
+- List only the meaningful changes (not trivial punctuation)
+- Explanation in Korean, mention the specific idiom or collocation principle
 
 Return ONLY valid JSON (no markdown):
 {
-  "corrected": "The best native-sounding version",
+  "corrected": "Best native version",
   "corrections": [
     {
-      "original_phrase": "what the user wrote",
+      "original_phrase": "exact phrase from input",
       "corrected_phrase": "natural version",
-      "explanation": "왜 이렇게 고쳤는지 한국어 설명 (이디엄/콜로케이션 관점 포함)"
+      "explanation": "한국어 설명 — 어떤 이디엄/콜로케이션 원칙인지 포함"
     }
   ],
   "alternatives": [
-    "Another natural way to say it (full sentence)"
+    "Alternative sentence 1",
+    "Alternative sentence 2"
   ],
-  "encouragement": "잘한 부분에 대한 격려 한마디"
+  "encouragement": "잘한 부분 격려 (한국어)"
 }
 
 User's English:
