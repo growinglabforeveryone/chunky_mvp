@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenerativeAI, GenerativeModel } from "@google/generative-ai";
 import { checkUsage, recordUsage } from "./_lib/checkUsage.js";
 
 export const config = { runtime: "edge" };
@@ -10,27 +10,9 @@ interface RawChunk {
   reuse_example: string;
 }
 
-export default async function handler(req: Request): Promise<Response> {
-  if (req.method !== "POST") {
-    return new Response("Method not allowed", { status: 405 });
-  }
+const PROMPT = (text: string) => `You are an English vocabulary chunk extractor for Korean learners.
 
-  // Usage check (free: 20/month)
-  const usageCheck = await checkUsage(req, "extract");
-  if ("response" in usageCheck) return usageCheck.response;
-  const { userId } = usageCheck.result;
-
-  try {
-    const { text: rawText } = await req.json();
-    // Edge function 타임아웃(25s) 방지: 텍스트 3000자로 제한
-    const text = typeof rawText === "string" ? rawText.slice(0, 3000) : rawText;
-
-    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
-
-    const result = await model.generateContent(`You are an English vocabulary chunk extractor for Korean learners.
-
-From the given English text, extract 5~8 useful "word chunks" — 2-5 word phrases that serve as reusable grammatical frames.
+From the given English text, extract 3~5 useful "word chunks" — 2-5 word phrases that serve as reusable grammatical frames.
 
 Rules:
 - ONLY extract phrases that appear VERBATIM in the text — exact characters, tense, spelling, word form
@@ -38,26 +20,13 @@ Rules:
 - DO NOT extract single words or full sentences
 - The word_phrase must be 2-5 consecutive words exactly as they appear in the text
 - DO NOT include the grammatical subject (e.g. extract "is built for", NOT "the world is built for")
-- DO NOT end a chunk with an article (a, an, the). "is driving a" is WRONG because it ends in the article "a"; you must extend the chunk to include the following noun, or pick a different chunk
-- Ending with a preposition IS fine when the preposition is part of the frame: "looking forward to", "face a mix of", "gap between", "a widening gap between" are all valid
-- DO NOT include topic-specific content nouns at the end of a chunk when they reduce reusability — extract the structural frame instead:
-  BAD:  "gap between investment" — ends in the content noun "investment", ties the chunk to one topic
-  GOOD: "a widening gap" or "gap between" or "a widening gap between" — reusable in any context
-  BAD:  "inflating a bubble" — too topic-specific; if you must include it, only use it if the collocation itself (inflate + bubble) is the learning point
+- DO NOT end a chunk with an article (a, an, the)
+- Ending with a preposition IS fine: "looking forward to", "face a mix of", "gap between" are valid
+- DO NOT include topic-specific content nouns at the end when they reduce reusability
 - The chunk must be a genuine reusable building block: verb collocation, prepositional phrase, fixed expression, or noun phrase pattern
-- Good examples: "are split between", "in the wake of", "a widening gap between", "face a mix of", "looking forward to", "trigger a sharp"
-- Bad examples: "is driving a" (ends in article — extend or skip), "gap between investment" (content noun reduces reusability), "the world is built for" (subject included)
 - Focus on chunks useful for professional/work contexts
 
-NESTED CHUNKS: When a longer phrase contains two independently learnable sub-chunks, extract BOTH as separate entries sharing the same example_sentence.
-  Example — from "investors face a mix of signals":
-    Entry 1: "face a mix of"     → verb frame (how "face" collocates)
-    Entry 2: "a mix of signals"  → domain noun collocation (business/finance pattern)
-  Only split when BOTH sub-chunks have clear independent reuse value. Do not split artificially.
-
-For korean_meaning: translate ONLY the chunk itself — do NOT add words that are not part of the chunk.
-  BAD:  chunk="face a mix of", meaning="~의 혼합된 신호들에 직면하다" (신호들 is NOT in the chunk)
-  GOOD: chunk="face a mix of", meaning="~의 혼합에 직면하다"
+For korean_meaning: translate ONLY the chunk itself.
 
 Return ONLY a valid JSON array (no explanation, no markdown):
 [
@@ -70,20 +39,83 @@ Return ONLY a valid JSON array (no explanation, no markdown):
 ]
 
 Text to analyze:
-${text}`);
+${text}`;
 
+/** 텍스트를 문장 경계 기준으로 N개 구간에 균등 분배 */
+function sampleSegments(text: string, segmentChars: number, count: number): string[] {
+  if (text.length <= segmentChars) return [text];
+
+  const step = Math.floor(text.length / count);
+  const segments: string[] = [];
+
+  for (let i = 0; i < count; i++) {
+    const start = i * step;
+    let end = start + segmentChars;
+    // 문장 끝(. ! ?)에서 자르기
+    const boundary = text.slice(end, end + 200).search(/[.!?]/);
+    if (boundary !== -1) end = end + boundary + 1;
+    segments.push(text.slice(start, Math.min(end, text.length)));
+  }
+
+  return segments;
+}
+
+async function extractFromSegment(model: GenerativeModel, segment: string): Promise<RawChunk[]> {
+  try {
+    const result = await model.generateContent(PROMPT(segment));
     const jsonText = result.response.text()
       .replace(/^```json\s*/i, "")
       .replace(/^```\s*/i, "")
       .replace(/```\s*$/i, "")
       .trim();
+    return JSON.parse(jsonText) as RawChunk[];
+  } catch {
+    return [];
+  }
+}
 
-    const raw: RawChunk[] = JSON.parse(jsonText);
+/** 중복 청크 제거: phrase가 이미 있는 다른 phrase의 부분 문자열이면 제거 */
+function deduplicateChunks(chunks: RawChunk[]): RawChunk[] {
+  const seen = new Set<string>();
+  return chunks.filter((c) => {
+    const key = c.word_phrase.toLowerCase();
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
 
-    const chunks = raw
+export default async function handler(req: Request): Promise<Response> {
+  if (req.method !== "POST") {
+    return new Response("Method not allowed", { status: 405 });
+  }
+
+  const usageCheck = await checkUsage(req, "extract");
+  if ("response" in usageCheck) return usageCheck.response;
+  const { userId } = usageCheck.result;
+
+  try {
+    const { text: rawText } = await req.json();
+    const text = typeof rawText === "string" ? rawText.trim() : "";
+    if (!text) throw new Error("empty text");
+
+    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
+
+    // 1200자씩 최대 4구간 균등 분배 → 병렬 추출
+    const SEGMENT_CHARS = 1200;
+    const MAX_SEGMENTS = 4;
+    const segments = sampleSegments(text, SEGMENT_CHARS, Math.min(MAX_SEGMENTS, Math.ceil(text.length / SEGMENT_CHARS)));
+
+    const rawArrays = await Promise.all(segments.map((seg) => extractFromSegment(model, seg)));
+    const allRaw = deduplicateChunks(rawArrays.flat());
+
+    // verbatim 검증은 전체 텍스트 기준
+    const chunks = allRaw
       .filter((item) =>
         new RegExp(item.word_phrase.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i").test(text)
       )
+      .slice(0, 12)
       .map((item) => ({
         id: crypto.randomUUID(),
         phrase: item.word_phrase,
@@ -94,7 +126,6 @@ ${text}`);
         createdAt: new Date().toISOString(),
       }));
 
-    // Record usage after success
     await recordUsage(userId, "extract");
 
     return new Response(JSON.stringify({ chunks }), {
