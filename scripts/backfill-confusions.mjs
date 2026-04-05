@@ -24,8 +24,9 @@ async function generateConfusion(phrase, meaning, example) {
 Korean meaning: ${meaning}
 Example: ${example}
 
-Provide 1-2 expressions Korean learners commonly confuse with this chunk.
-Format: "❌ wrong_expression (reason in Korean). 예: example sentence."
+Provide 1-2 ENGLISH expressions that Korean learners commonly confuse with this chunk.
+The confusable expression MUST be in English.
+Format: "❌ [English wrong expression] (이유: Korean explanation). 예: English example sentence."
 Keep it under 60 words. If no common confusion exists, reply with empty string "".
 Reply with ONLY the confusion text or empty string, nothing else.`,
       },

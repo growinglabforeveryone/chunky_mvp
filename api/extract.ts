@@ -70,11 +70,11 @@ Return ONLY a valid JSON array (no explanation, no markdown):
     "korean_meaning": "~와 ~ 사이에서 의견이 갈리다",
     "example_sentence": "The exact sentence from the text where this chunk appears.",
     "reuse_example": "Experts are split between optimism and caution.",
-    "common_confusions": "❌ are divided between (between 대신 on으로 써야 하는 경우가 많음, 예: divided on the issue). 예: Experts are divided on this policy."
+    "common_confusions": "❌ are divided on (이유: 'divided'는 전치사 'on'과 짝을 이룸). 예: Experts are divided on this policy."
   }
 ]
 
-For common_confusions: provide 1-2 expressions Korean learners commonly confuse with this chunk. Format: "❌ wrong_expression (reason in Korean). 예: example sentence." Keep it under 60 words. If no common confusion exists, use an empty string.
+For common_confusions: provide 1-2 ENGLISH expressions that Korean learners commonly confuse with this chunk. The confusable expression MUST be in English. Format: "❌ [English wrong expression] (이유: Korean explanation). 예: English example sentence." Keep it under 60 words. If no common confusion exists, use an empty string.
 
 Text to analyze:
 ${text}`,
