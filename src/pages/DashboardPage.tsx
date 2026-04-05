@@ -271,10 +271,10 @@ export default function DashboardPage() {
               <Progress value={(usedThisMonth / FREE_AI_LIMIT) * 100} className="h-2.5" />
               <div className="mt-2 flex items-center justify-between">
                 <p className="text-xs text-muted-foreground">
-                  단어장 {stats.active}/{FREE_VOCAB_LIMIT}개
+                  단어장 {stats.active}/{FREE_VOCAB_LIMIT}개 (누적)
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  매월 1일 초기화
+                  AI 횟수만 매월 1일 초기화
                 </p>
               </div>
             </CardContent>
