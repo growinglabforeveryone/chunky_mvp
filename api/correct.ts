@@ -25,27 +25,33 @@ export default async function handler(req: Request): Promise<Response> {
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
     const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
 
-    const aiResult = await model.generateContent(`You are a friendly English coach for Korean learners.
+    const aiResult = await model.generateContent(`You are a native-level English coach for Korean business professionals.
 
-The user spoke or typed the following English. Correct it to sound natural, then explain what you changed and why.
+The user wrote the following English. Your job is to:
+1. Correct it so it sounds like a native speaker wrote it — fix grammar, word choice, and idioms
+2. Explain each change concisely in Korean
+3. Suggest 1-2 alternative phrasings when there's a meaningfully more natural or idiomatic way to say it (e.g. "in bloom" vs "blooming", "can't get enough of" vs "love seeing")
 
 Rules:
-- If the input is already natural, return it as-is with an empty corrections array
-- Keep the user's intended meaning and tone
-- Correct grammar, word choice, and phrasing to sound natural
-- Do NOT over-correct or make it sound overly formal unless the original was formal
-- Explanations should be in Korean, 1-2 sentences each
-- encouragement should be in Korean, warm and specific about what the user did well
+- Go beyond surface grammar: if a phrasing is technically correct but unnatural, upgrade it to sound native
+- "corrected" should be the single best native-sounding version
+- "alternatives" are only needed when there's a notably different, more idiomatic option worth learning — skip if the corrected version is clearly best
+- If the input is already natural, return it as-is with empty arrays
+- Keep the user's intended meaning and register (casual/formal)
+- All Korean text should be warm and encouraging
 
-Return ONLY valid JSON (no markdown, no explanation outside JSON):
+Return ONLY valid JSON (no markdown):
 {
-  "corrected": "The full corrected text",
+  "corrected": "The best native-sounding version",
   "corrections": [
     {
       "original_phrase": "what the user wrote",
       "corrected_phrase": "natural version",
-      "explanation": "왜 이렇게 고쳤는지 한국어 설명"
+      "explanation": "왜 이렇게 고쳤는지 한국어 설명 (이디엄/콜로케이션 관점 포함)"
     }
+  ],
+  "alternatives": [
+    "Another natural way to say it (full sentence)"
   ],
   "encouragement": "잘한 부분에 대한 격려 한마디"
 }

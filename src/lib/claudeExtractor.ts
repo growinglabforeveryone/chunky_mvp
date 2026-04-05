@@ -8,6 +8,7 @@ export interface CorrectionResult {
     corrected_phrase: string;
     explanation: string;
   }[];
+  alternatives?: string[];
   encouragement: string;
 }
 

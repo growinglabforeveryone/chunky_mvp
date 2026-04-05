@@ -244,6 +244,20 @@ export default function SpeakPage() {
                   </div>
                 </div>
               )}
+
+              {/* Alternatives */}
+              {correction.alternatives && correction.alternatives.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">이렇게도 말할 수 있어요</p>
+                  <div className="space-y-2">
+                    {correction.alternatives.map((alt, i) => (
+                      <div key={i} className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 font-serif text-sm leading-relaxed dark:border-amber-800 dark:bg-amber-950/30">
+                        {alt}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
