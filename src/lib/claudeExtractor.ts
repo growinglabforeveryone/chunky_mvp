@@ -65,12 +65,24 @@ export async function getMeaning(phrase: string): Promise<string> {
 
 export async function extractChunks(text: string): Promise<Chunk[]> {
   const headers = await getAuthHeaders();
-  const response = await fetch("/api/extract", {
-    method: "POST",
-    headers,
-    body: JSON.stringify({ text }),
-  });
-  await handleResponse(response);
-  const { chunks } = await response.json();
-  return chunks;
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 25000);
+  try {
+    const response = await fetch("/api/extract", {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ text }),
+      signal: controller.signal,
+    });
+    await handleResponse(response);
+    const { chunks } = await response.json();
+    return chunks;
+  } catch (err: any) {
+    if (err.name === "AbortError") {
+      throw new Error("추출 시간이 초과됐습니다. 텍스트를 짧게 줄여서 다시 시도해주세요.");
+    }
+    throw err;
+  } finally {
+    clearTimeout(timeout);
+  }
 }

@@ -7,18 +7,14 @@ import UpgradeModal from "@/components/UpgradeModal";
 import { useSpeechRecognition } from "@/hooks/useSpeechRecognition";
 import TextReader from "@/components/TextReader";
 import ChunkCard from "@/components/ChunkCard";
+import { Chunk } from "@/types/chunk";
 import { Plus, Mic, MicOff, Save, Loader2, Sparkles, RotateCcw } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 
 export default function SpeakPage() {
   const {
-    chunks,
-    setSourceText,
-    setChunks,
-    updateChunk,
-    removeChunk,
-    addChunk,
+    setChunks: storeSetChunks,
     commitChunks,
     setSourceName,
     setMiniSessionCards,
@@ -26,94 +22,105 @@ export default function SpeakPage() {
   } = useChunkStore();
 
   const { tier, usedThisMonth, canUseAI, incrementUsage } = useUsageStore();
-
   const navigate = useNavigate();
-  const [inputText, setInputText] = useState("");
-  const [upgradeModal, setUpgradeModal] = useState<{ reason: "ai_limit" | "vocab_limit"; used?: number; limit?: number } | null>(null);
 
-  const { isListening, isSupported: speechSupported, startListening, stopListening } =
-    useSpeechRecognition(
-      useCallback((text: string) => setInputText(text), []),
-    );
+  const [inputText, setInputText] = useState("");
+  const [correction, setCorrection] = useState<CorrectionResult | null>(null);
+  // speakChunks는 로컬 상태 — chunkStore(읽기/라이브러리 전용)를 오염시키지 않음
+  const [speakChunks, setSpeakChunks] = useState<Chunk[]>([]);
   const [correcting, setCorrecting] = useState(false);
   const [extracting, setExtracting] = useState(false);
-  const [correction, setCorrection] = useState<CorrectionResult | null>(null);
   const [pendingMiniCards, setPendingMiniCards] = useState<{ id: string; phrase: string }[]>([]);
   const [schedulingTomorrow, setSchedulingTomorrow] = useState(false);
   const [hoveredChunkId, setHoveredChunkId] = useState<string | null>(null);
+  const [upgradeModal, setUpgradeModal] = useState<{ reason: "ai_limit" | "vocab_limit"; used?: number; limit?: number } | null>(null);
 
-  // Phase: "input" → "corrected" → "chunks"
-  const phase = chunks.length > 0 ? "chunks" : correction ? "corrected" : "input";
+  const { isListening, isSupported: speechSupported, startListening, stopListening } =
+    useSpeechRecognition(useCallback((text: string) => setInputText(text), []));
 
-  const handleCorrectAndExtract = useCallback(async () => {
+  // 상태 A: 교정 완료, 추출 전 / 상태 B: 추출 완료
+  const phase = speakChunks.length > 0 ? "chunks" : correction ? "corrected" : "input";
+
+  // Step 1: 교정만
+  const handleCorrect = useCallback(async () => {
     if (!inputText.trim()) return;
     setCorrecting(true);
-    let corrected = false;
     try {
-      // Step 1: Correct
       const result = await correctText(inputText);
       incrementUsage();
       setCorrection(result);
-      corrected = true;
-
-      // Step 2: Extract chunks from corrected text
-      setExtracting(true);
-      setCorrecting(false);
-      setSourceText(result.corrected);
-      setSourceName("Speaking");
-
-      const extracted = await extractChunks(result.corrected);
-      incrementUsage();
-      const enriched = extracted.map((c) => ({
-        ...c,
-        sourceType: "text" as const,
-      }));
-      setChunks(enriched);
-      toast.success(`교정 완료! ${enriched.length}개 단어뭉치를 추출했습니다`);
     } catch (err) {
       if (err instanceof MonthlyLimitError) {
-        if (corrected) {
-          toast.info("교정은 완료했지만, 추출은 월 한도에 도달했어요");
-        }
         setUpgradeModal({ reason: "ai_limit", used: err.used, limit: err.limit });
         return;
       }
-      console.error("Correct & extract error:", err);
-      if (corrected) {
-        toast.error("단어뭉치 추출에 실패했습니다. 교정 결과는 확인할 수 있어요");
-      } else {
-        toast.error("교정에 실패했습니다");
-      }
+      toast.error("교정에 실패했습니다");
     } finally {
       setCorrecting(false);
+    }
+  }, [inputText, incrementUsage]);
+
+  // Step 2: 추출 (상태 A → B)
+  const handleExtract = useCallback(async () => {
+    if (!correction) return;
+    setExtracting(true);
+    try {
+      const extracted = await extractChunks(correction.corrected);
+      incrementUsage();
+      const enriched = extracted.map((c) => ({ ...c, sourceType: "text" as const }));
+      setSpeakChunks(enriched);
+      toast.success(`${enriched.length}개 단어뭉치를 추출했습니다`);
+    } catch (err) {
+      if (err instanceof MonthlyLimitError) {
+        setUpgradeModal({ reason: "ai_limit", used: err.used, limit: err.limit });
+        return;
+      }
+      toast.error("단어뭉치 추출에 실패했습니다");
+    } finally {
       setExtracting(false);
     }
-  }, [inputText, setSourceText, setSourceName, setChunks]);
+  }, [correction, incrementUsage]);
 
   const handleReset = () => {
-    setChunks([]);
-    setSourceText("");
+    setSpeakChunks([]);
     setCorrection(null);
     setInputText("");
   };
 
   const handleAddChunk = () => {
-    addChunk({
-      id: crypto.randomUUID(),
-      phrase: "",
-      meaning: "",
-      exampleSentence: correction?.corrected ?? "",
-      createdAt: new Date().toISOString(),
-    });
+    const id = crypto.randomUUID();
+    setSpeakChunks((prev) => [
+      ...prev,
+      {
+        id,
+        phrase: "",
+        meaning: "",
+        exampleSentence: correction?.corrected ?? "",
+        createdAt: new Date().toISOString(),
+      },
+    ]);
+  };
+
+  const handleUpdateChunk = (id: string, updates: Partial<Chunk>) => {
+    setSpeakChunks((prev) => prev.map((c) => (c.id === id ? { ...c, ...updates } : c)));
+  };
+
+  const handleRemoveChunk = (id: string) => {
+    setSpeakChunks((prev) => prev.filter((c) => c.id !== id));
   };
 
   const handleCommit = async () => {
-    if (chunks.length === 0) return;
-    const toCommit = chunks.map((c) => ({ id: c.id, phrase: c.phrase }));
+    if (speakChunks.length === 0) return;
+    const toCommit = speakChunks.map((c) => ({ id: c.id, phrase: c.phrase }));
     try {
+      // commitChunks는 chunkStore.chunks를 읽으므로 임시 주입 후 저장
+      storeSetChunks(speakChunks);
+      setSourceName("말하기");
       await commitChunks();
       setPendingMiniCards(toCommit);
+      setSpeakChunks([]);
     } catch (err) {
+      storeSetChunks([]); // 실패 시 원복
       if (err instanceof VocabLimitError) {
         setUpgradeModal({ reason: "vocab_limit", used: err.current, limit: err.limit });
         return;
@@ -124,6 +131,7 @@ export default function SpeakPage() {
 
   return (
     <div className="mx-auto max-w-6xl px-6 py-8">
+      {/* ── 상태: input ── */}
       {phase === "input" && (
         <div className="mx-auto max-w-2xl space-y-6">
           <div className="space-y-2 text-center">
@@ -158,6 +166,7 @@ export default function SpeakPage() {
               </button>
             )}
           </div>
+
           {isListening && (
             <p className="text-center text-sm text-red-500 animate-pulse">
               듣고 있어요... 말을 마치면 버튼을 눌러 중지하세요
@@ -166,16 +175,12 @@ export default function SpeakPage() {
 
           <div className="space-y-2">
             <button
-              onClick={!canUseAI() ? () => setUpgradeModal({ reason: "ai_limit", used: usedThisMonth, limit: FREE_AI_LIMIT }) : handleCorrectAndExtract}
-              disabled={correcting || extracting || !inputText.trim()}
+              onClick={!canUseAI() ? () => setUpgradeModal({ reason: "ai_limit", used: usedThisMonth, limit: FREE_AI_LIMIT }) : handleCorrect}
+              disabled={correcting || !inputText.trim()}
               className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3 font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
             >
-              {correcting || extracting ? (
-                <Loader2 className="h-5 w-5 animate-spin" />
-              ) : (
-                <Sparkles className="h-5 w-5" />
-              )}
-              {correcting ? "교정 중..." : extracting ? "단어뭉치 추출 중..." : "교정 + 단어뭉치 추출"}
+              {correcting ? <Loader2 className="h-5 w-5 animate-spin" /> : <Sparkles className="h-5 w-5" />}
+              {correcting ? "교정 중..." : "교정하기"}
             </button>
             {tier === "free" && (
               <p className="text-center text-xs text-muted-foreground">
@@ -186,9 +191,13 @@ export default function SpeakPage() {
         </div>
       )}
 
-      {(phase === "corrected" || phase === "chunks") && (
-        <div className="space-y-4">
-          {/* Header */}
+      {/* ── 상태 A: 교정 완료, 추출 전 ── */}
+      {phase === "corrected" && correction && (
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mx-auto max-w-2xl space-y-4"
+        >
           <div className="flex items-center justify-between">
             <h2 className="font-serif text-xl font-semibold text-foreground">교정 결과</h2>
             <button
@@ -200,140 +209,154 @@ export default function SpeakPage() {
             </button>
           </div>
 
-          {/* Correction Display */}
-          {correction && (
-            <div className="space-y-4">
-              {/* Encouragement */}
-              {correction.encouragement && (
-                <div className="rounded-xl border border-green-200 bg-green-50 px-5 py-3 text-sm text-green-800 dark:border-green-800 dark:bg-green-950/30 dark:text-green-300">
-                  {correction.encouragement}
-                </div>
-              )}
-
-              {/* Original vs Corrected */}
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="space-y-2">
-                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">내가 쓴 문장</p>
-                  <div className="rounded-xl border bg-card p-4 font-serif text-sm leading-relaxed text-muted-foreground">
-                    {inputText}
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <p className="text-xs font-medium uppercase tracking-wide text-primary">교정된 문장</p>
-                  <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 font-serif text-sm leading-relaxed text-foreground">
-                    {correction.corrected}
-                  </div>
-                </div>
-              </div>
-
-              {/* Corrections Detail */}
-              {correction.corrections.length > 0 && (
-                <div className="space-y-2">
-                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">교정 내용</p>
-                  <div className="space-y-2">
-                    {correction.corrections.map((c, i) => (
-                      <div key={i} className="rounded-lg border bg-card px-4 py-3 text-sm">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <span className="line-through text-muted-foreground">{c.original_phrase}</span>
-                          <span className="text-muted-foreground">→</span>
-                          <span className="font-medium text-primary">{c.corrected_phrase}</span>
-                        </div>
-                        <p className="mt-1 text-muted-foreground">{c.explanation}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Alternatives */}
-              {correction.alternatives && correction.alternatives.length > 0 && (
-                <div className="space-y-2">
-                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">이렇게도 말할 수 있어요</p>
-                  <div className="space-y-2">
-                    {correction.alternatives.map((alt, i) => (
-                      <div key={i} className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 font-serif text-sm leading-relaxed dark:border-amber-800 dark:bg-amber-950/30">
-                        {alt}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
+          {correction.encouragement && (
+            <div className="rounded-xl border border-green-200 bg-green-50 px-5 py-3 text-sm text-green-800 dark:border-green-800 dark:bg-green-950/30 dark:text-green-300">
+              {correction.encouragement}
             </div>
           )}
 
-          {/* Chunks Section */}
-          {phase === "chunks" && (
-            <div className="flex flex-col gap-6 pt-2 md:flex-row">
-              {/* Left: Corrected text with highlights — mobile에서는 접을 수 있게 */}
-              <div className="space-y-4 md:flex-[3]">
-                <h3 className="text-sm font-medium text-muted-foreground">교정된 텍스트</h3>
-                <div className="rounded-xl border bg-card p-4 shadow-sm sm:p-6" style={{ maxWidth: "65ch" }}>
-                  <TextReader
-                    text={correction?.corrected ?? ""}
-                    chunks={chunks}
-                    hoveredChunkId={hoveredChunkId}
-                    onAddPhrase={(phrase, sentence) => {
-                      const id = crypto.randomUUID();
-                      addChunk({
-                        id,
-                        phrase,
-                        meaning: "번역 중...",
-                        exampleSentence: sentence,
-                        createdAt: new Date().toISOString(),
-                      });
-                      toast.success(`"${phrase}" 추가됨`);
-                      getMeaning(phrase).then((meaning) => {
-                        updateChunk(id, { meaning });
-                      });
-                    }}
-                  />
-                </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">내가 쓴 문장</p>
+              <div className="rounded-xl border bg-card p-4 font-serif text-sm leading-relaxed text-muted-foreground">
+                {inputText}
               </div>
+            </div>
+            <div className="space-y-2">
+              <p className="text-xs font-medium uppercase tracking-wide text-primary">교정된 문장</p>
+              <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 font-serif text-sm leading-relaxed text-foreground">
+                {correction.corrected}
+              </div>
+            </div>
+          </div>
 
-              {/* Right: Chunk cards */}
-              <div className="space-y-4 md:flex-[2]">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-sm font-medium text-muted-foreground">
-                    추출된 표현{" "}
-                    <span className="tabular-nums">({chunks.length})</span>
-                  </h3>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={handleAddChunk}
-                      className="flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-sm text-muted-foreground hover:bg-secondary hover:text-foreground"
-                    >
-                      <Plus className="h-3.5 w-3.5" />
-                      추가
-                    </button>
-                    <button
-                      onClick={handleCommit}
-                      className="flex items-center gap-1 rounded-lg bg-primary px-3 py-1.5 text-sm text-primary-foreground hover:bg-primary/90"
-                    >
-                      <Save className="h-3.5 w-3.5" />
-                      저장
-                    </button>
+          {correction.corrections.length > 0 && (
+            <div className="space-y-2">
+              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">교정 내용</p>
+              <div className="space-y-2">
+                {correction.corrections.map((c, i) => (
+                  <div key={i} className="rounded-lg border bg-card px-4 py-3 text-sm">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="line-through text-muted-foreground">{c.original_phrase}</span>
+                      <span className="text-muted-foreground">→</span>
+                      <span className="font-medium text-primary">{c.corrected_phrase}</span>
+                    </div>
+                    <p className="mt-1 text-muted-foreground">{c.explanation}</p>
                   </div>
-                </div>
-
-                <div className="space-y-3">
-                  <AnimatePresence>
-                    {chunks.map((chunk, i) => (
-                      <ChunkCard
-                        key={chunk.id}
-                        chunk={chunk}
-                        index={i}
-                        onUpdate={updateChunk}
-                        onRemove={removeChunk}
-                        isActive={hoveredChunkId === chunk.id}
-                        onHover={setHoveredChunkId}
-                      />
-                    ))}
-                  </AnimatePresence>
-                </div>
+                ))}
               </div>
             </div>
           )}
-        </div>
+
+          {correction.alternatives && correction.alternatives.length > 0 && (
+            <div className="space-y-2">
+              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">이렇게도 말할 수 있어요</p>
+              <div className="space-y-2">
+                {correction.alternatives.map((alt, i) => (
+                  <div key={i} className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 font-serif text-sm leading-relaxed dark:border-amber-800 dark:bg-amber-950/30">
+                    {alt}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* 상태 A CTA */}
+          <button
+            onClick={!canUseAI() ? () => setUpgradeModal({ reason: "ai_limit", used: usedThisMonth, limit: FREE_AI_LIMIT }) : handleExtract}
+            disabled={extracting}
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3 font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
+          >
+            {extracting ? <Loader2 className="h-5 w-5 animate-spin" /> : <Sparkles className="h-5 w-5" />}
+            {extracting ? "추출 중..." : "⚡ 단어뭉치 추출하기"}
+          </button>
+        </motion.div>
+      )}
+
+      {/* ── 상태 B: 추출 완료 ── */}
+      {phase === "chunks" && correction && (
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="space-y-4"
+        >
+          <div className="flex items-center justify-between">
+            <h2 className="font-serif text-xl font-semibold text-foreground">교정 결과</h2>
+            <button
+              onClick={handleReset}
+              className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
+            >
+              <RotateCcw className="h-3.5 w-3.5" />
+              새로 말하기
+            </button>
+          </div>
+
+          <div className="flex flex-col gap-6 md:flex-row">
+            {/* 좌측: 교정된 텍스트 */}
+            <div className="space-y-4 md:flex-[3]">
+              <h3 className="text-sm font-medium text-muted-foreground">교정된 텍스트</h3>
+              <div className="rounded-xl border bg-card p-4 shadow-sm sm:p-6" style={{ maxWidth: "65ch" }}>
+                <TextReader
+                  text={correction.corrected}
+                  chunks={speakChunks}
+                  hoveredChunkId={hoveredChunkId}
+                  onAddPhrase={(phrase, sentence) => {
+                    const id = crypto.randomUUID();
+                    handleUpdateChunk(id, { phrase, meaning: "번역 중...", exampleSentence: sentence });
+                    setSpeakChunks((prev) => [
+                      ...prev,
+                      { id, phrase, meaning: "번역 중...", exampleSentence: sentence, createdAt: new Date().toISOString() },
+                    ]);
+                    toast.success(`"${phrase}" 추가됨`);
+                    getMeaning(phrase).then((meaning) => handleUpdateChunk(id, { meaning }));
+                  }}
+                />
+              </div>
+            </div>
+
+            {/* 우측: 단어뭉치 카드 */}
+            <div className="space-y-4 md:flex-[2]">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-medium text-muted-foreground">
+                  추출된 표현 <span className="tabular-nums">({speakChunks.length})</span>
+                </h3>
+                <button
+                  onClick={handleAddChunk}
+                  className="flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-sm text-muted-foreground hover:bg-secondary hover:text-foreground"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  추가
+                </button>
+              </div>
+
+              <div className="space-y-3">
+                <AnimatePresence>
+                  {speakChunks.map((chunk, i) => (
+                    <ChunkCard
+                      key={chunk.id}
+                      chunk={chunk}
+                      index={i}
+                      onUpdate={handleUpdateChunk}
+                      onRemove={handleRemoveChunk}
+                      isActive={hoveredChunkId === chunk.id}
+                      onHover={setHoveredChunkId}
+                    />
+                  ))}
+                </AnimatePresence>
+              </div>
+
+              {/* 상태 B CTA */}
+              <button
+                onClick={handleCommit}
+                disabled={speakChunks.length === 0}
+                className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3 font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
+              >
+                <Save className="h-4 w-4" />
+                라이브러리에 저장
+              </button>
+            </div>
+          </div>
+        </motion.div>
       )}
 
       {/* 업그레이드 모달 */}
@@ -347,7 +370,7 @@ export default function SpeakPage() {
         />
       )}
 
-      {/* Mini Session Modal (same as ExtractPage) */}
+      {/* 저장 완료 모달 */}
       <AnimatePresence>
         {pendingMiniCards.length > 0 && (
           <motion.div

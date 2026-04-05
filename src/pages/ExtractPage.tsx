@@ -95,7 +95,8 @@ export default function ExtractPage() {
         return;
       }
       console.error("Extract error:", err);
-      toast.error("추출에 실패했습니다");
+      const msg = err instanceof Error ? err.message : "추출에 실패했습니다";
+      toast.error(msg);
     } finally {
       setLoading(false);
     }

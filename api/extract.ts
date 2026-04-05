@@ -21,7 +21,9 @@ export default async function handler(req: Request): Promise<Response> {
   const { userId } = usageCheck.result;
 
   try {
-    const { text } = await req.json();
+    const { text: rawText } = await req.json();
+    // Edge function 타임아웃(25s) 방지: 텍스트 3000자로 제한
+    const text = typeof rawText === "string" ? rawText.slice(0, 3000) : rawText;
 
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
     const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
