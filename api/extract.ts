@@ -110,11 +110,16 @@ export default async function handler(req: Request): Promise<Response> {
     const rawArrays = await Promise.all(segments.map((seg) => extractFromSegment(model, seg)));
     const allRaw = deduplicateChunks(rawArrays.flat());
 
-    // verbatim 검증은 전체 텍스트 기준
+    // verbatim 검증 + 원문 등장 순서 정렬
     const chunks = allRaw
       .filter((item) =>
         new RegExp(item.word_phrase.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i").test(text)
       )
+      .sort((a, b) => {
+        const posA = text.toLowerCase().indexOf(a.word_phrase.toLowerCase());
+        const posB = text.toLowerCase().indexOf(b.word_phrase.toLowerCase());
+        return posA - posB;
+      })
       .slice(0, 12)
       .map((item) => ({
         id: crypto.randomUUID(),
