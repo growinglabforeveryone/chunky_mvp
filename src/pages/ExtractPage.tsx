@@ -12,16 +12,22 @@ import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 
 // YouTube 자막 타임스탬프 제거
-// 한국어 포맷: "20:1820분 18초Text"
-// 일반 포맷: "0:00 Text" (줄 시작)
+// 포맷 1: "20:1820분 18초Text" (한국어 분+초)
+// 포맷 2: "0:00 Text" (줄 시작 mm:ss)
+// 포맷 3: "8초From" (초만 있는 타임스탬프)
+// 포맷 4: "[music]" (소리 큐 브라켓)
 function stripYouTubeTimestamps(text: string): string {
   let cleaned = text.replace(/\d+:\d{2,3}\d+분\s*\d+초\s*/g, " ");
   cleaned = cleaned.replace(/^\d+:\d{2}(?::\d{2})?\s*/gm, "");
+  cleaned = cleaned.replace(/\d+초\s*/g, " ");
+  cleaned = cleaned.replace(/\[.*?\]/g, "");
   return cleaned.replace(/\s{2,}/g, " ").replace(/\n/g, " ").trim();
 }
 
 function hasTimestamps(text: string): boolean {
-  return /\d+:\d{2}\d+분\s*\d+초/.test(text) || /^\d+:\d{2}/m.test(text);
+  return /\d+:\d{2}\d+분\s*\d+초/.test(text)
+    || /^\d+:\d{2}/m.test(text)
+    || /\d+초/.test(text);
 }
 
 const SOURCE_PRESETS = [
