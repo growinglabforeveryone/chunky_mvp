@@ -342,6 +342,14 @@ export default function ReviewPage() {
               </button>
             </div>
 
+            {/* 혼동 표현 */}
+            {current.commonConfusions && (
+              <div className="mt-4 w-full rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-left" onClick={(e) => e.stopPropagation()}>
+                <p className="text-xs font-semibold text-amber-800 mb-1">헷갈리기 쉬운 표현</p>
+                <p className="text-xs text-amber-700 leading-relaxed">{current.commonConfusions}</p>
+              </div>
+            )}
+
             {/* 제외 버튼 */}
             <button
               onClick={(e) => { e.stopPropagation(); handleExclude(); }}

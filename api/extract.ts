@@ -8,6 +8,7 @@ interface RawChunk {
   korean_meaning: string;
   example_sentence: string;
   reuse_example: string;
+  common_confusions: string;
 }
 
 export default async function handler(req: Request): Promise<Response> {
@@ -68,9 +69,12 @@ Return ONLY a valid JSON array (no explanation, no markdown):
     "word_phrase": "are split between",
     "korean_meaning": "~와 ~ 사이에서 의견이 갈리다",
     "example_sentence": "The exact sentence from the text where this chunk appears.",
-    "reuse_example": "Experts are split between optimism and caution."
+    "reuse_example": "Experts are split between optimism and caution.",
+    "common_confusions": "❌ are divided between (between 대신 on으로 써야 하는 경우가 많음, 예: divided on the issue). 예: Experts are divided on this policy."
   }
 ]
+
+For common_confusions: provide 1-2 expressions Korean learners commonly confuse with this chunk. Format: "❌ wrong_expression (reason in Korean). 예: example sentence." Keep it under 60 words. If no common confusion exists, use an empty string.
 
 Text to analyze:
 ${text}`,
@@ -99,6 +103,7 @@ ${text}`,
         meaning: item.korean_meaning,
         exampleSentence: item.example_sentence,
         reuseExample: item.reuse_example,
+        commonConfusions: item.common_confusions || undefined,
         sourceText: text.slice(0, 300),
         createdAt: new Date().toISOString(),
       }));
