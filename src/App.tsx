@@ -9,7 +9,7 @@ import ExtractPage from "@/pages/ExtractPage";
 import SpeakPage from "@/pages/SpeakPage";
 import ReviewPage from "@/pages/ReviewPage";
 import LibraryPage from "@/pages/LibraryPage";
-import LoginPage from "@/pages/LoginPage";
+import LandingPage from "@/pages/LandingPage";
 import NotFound from "@/pages/NotFound";
 import { useChunkStore } from "@/store/chunkStore";
 import { useUsageStore } from "@/store/usageStore";
@@ -38,7 +38,7 @@ function AppContent() {
   }
 
   if (!session) {
-    return <LoginPage />;
+    return <LandingPage />;
   }
 
   return (
