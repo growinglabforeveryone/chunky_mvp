@@ -145,16 +145,16 @@ export default function ExtractPage() {
 
           <textarea
             value={inputText}
-            onChange={(e) => {
-              const val = e.target.value;
-              if (hasTimestamps(val)) {
-                const cleaned = stripYouTubeTimestamps(val);
+            onPaste={(e) => {
+              const pasted = e.clipboardData.getData("text");
+              if (hasTimestamps(pasted)) {
+                e.preventDefault();
+                const cleaned = stripYouTubeTimestamps(pasted);
                 setInputText(cleaned);
-                if (cleaned !== val) toast.success("유튜브 타임스탬프를 자동으로 제거했어요");
-              } else {
-                setInputText(val);
+                toast.success("유튜브 타임스탬프를 자동으로 제거했어요");
               }
             }}
+            onChange={(e) => setInputText(e.target.value)}
             rows={12}
             placeholder="영어 기사, 이메일, 또는 텍스트를 여기에 붙여넣으세요..."
             className="w-full resize-none rounded-xl border bg-card p-6 font-serif text-lg leading-relaxed shadow-sm placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/20"
