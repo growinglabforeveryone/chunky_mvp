@@ -24,10 +24,20 @@ async function generateConfusion(phrase, meaning, example) {
 Korean meaning: ${meaning}
 Example: ${example}
 
-Provide 1-2 ENGLISH expressions that Korean learners commonly confuse with this chunk.
-The confusable expression MUST be in English.
-Format: "❌ [English wrong expression] (이유: Korean explanation). 예: English example sentence."
-Keep it under 60 words. If no common confusion exists, reply with empty string "".
+Identify the single most impactful English expression a Korean business professional would MISTAKENLY use instead of this chunk.
+
+Target these error types (in priority order):
+1. Wrong word choice — a near-synonym that SOUNDS right but has wrong register/collocation/nuance for this context (e.g. "crucial moment" vs "critical moment": crucial=성공·전환점 느낌, critical=위기·긴박함 느낌)
+2. Wrong preposition — the preposition Korean learners commonly get wrong with this verb/noun pattern
+3. Plausible paraphrase from Korean literal translation that a native speaker wouldn't use
+
+DO NOT flag:
+- Article differences (a/the) — not a meaningful learning target
+- Synonyms that are equally natural in the same context
+- Expressions that are technically correct alternatives
+
+Format: "❌ [English wrong expression] (이유: Korean explanation of the nuance/collocation difference). 예: English sentence using the confusable expression."
+Provide exactly 1 confusion — the most impactful one. Keep it under 70 words. If no meaningful confusion exists, reply with empty string "".
 Reply with ONLY the confusion text or empty string, nothing else.`,
       },
     ],
