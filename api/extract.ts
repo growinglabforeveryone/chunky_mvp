@@ -1,5 +1,5 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import { checkUsage, recordUsage } from "./_lib/checkUsage";
+import { checkUsage, recordUsage } from "./_lib/checkUsage.js";
 
 export const config = { runtime: "edge" };
 

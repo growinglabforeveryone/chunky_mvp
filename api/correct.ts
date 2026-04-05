@@ -1,5 +1,5 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import { checkUsage, recordUsage } from "./_lib/checkUsage";
+import { checkUsage, recordUsage } from "./_lib/checkUsage.js";
 
 export const config = { runtime: "edge" };
 
@@ -25,7 +25,7 @@ export default async function handler(req: Request): Promise<Response> {
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
     const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
 
-    const result = await model.generateContent(`You are a friendly English coach for Korean learners.
+    const aiResult = await model.generateContent(`You are a friendly English coach for Korean learners.
 
 The user spoke or typed the following English. Correct it to sound natural, then explain what you changed and why.
 
@@ -53,7 +53,7 @@ Return ONLY valid JSON (no markdown, no explanation outside JSON):
 User's English:
 ${text}`);
 
-    const jsonText = result.response.text()
+    const jsonText = aiResult.response.text()
       .replace(/^```json\s*/i, "")
       .replace(/^```\s*/i, "")
       .replace(/```\s*$/i, "")

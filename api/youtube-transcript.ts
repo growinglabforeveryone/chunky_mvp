@@ -73,7 +73,7 @@ async function fetchWithBrowserless(videoId: string): Promise<string | null> {
       for (const script of scripts) {
         const text = script.textContent || "";
         if (text.includes("captionTracks")) {
-          const match = text.match(/"baseUrl":"(https:\\/\\/www\\.youtube\\.com\\/api\\/timedtext[^"]+)"/);
+          const match = text.match(new RegExp('"baseUrl":"(https://www\\.youtube\\.com/api/timedtext[^"]+)"'));
           if (match) return match[1].replace(/\\u0026/g, "&");
         }
       }
