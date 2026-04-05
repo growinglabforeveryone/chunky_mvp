@@ -11,6 +11,19 @@ import { Plus, Sparkles, Save, Loader2, ChevronDown, X, MousePointerClick, Trash
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 
+// YouTube 자막 타임스탬프 제거
+// 한국어 포맷: "20:1820분 18초Text"
+// 일반 포맷: "0:00 Text" (줄 시작)
+function stripYouTubeTimestamps(text: string): string {
+  let cleaned = text.replace(/\d+:\d{2,3}\d+분\s*\d+초\s*/g, " ");
+  cleaned = cleaned.replace(/^\d+:\d{2}(?::\d{2})?\s*/gm, "");
+  return cleaned.replace(/\s{2,}/g, " ").replace(/\n/g, " ").trim();
+}
+
+function hasTimestamps(text: string): boolean {
+  return /\d+:\d{2}\d+분\s*\d+초/.test(text) || /^\d+:\d{2}/m.test(text);
+}
+
 const SOURCE_PRESETS = [
   { label: "📧 이메일", value: "이메일" },
   { label: "📰 기사/뉴스", value: "기사/뉴스" },
@@ -127,6 +140,15 @@ export default function ExtractPage() {
           <textarea
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
+            onPaste={(e) => {
+              const pasted = e.clipboardData.getData("text");
+              if (hasTimestamps(pasted)) {
+                e.preventDefault();
+                const cleaned = stripYouTubeTimestamps(pasted);
+                setInputText(cleaned);
+                toast.success("유튜브 타임스탬프를 자동으로 제거했어요");
+              }
+            }}
             rows={12}
             placeholder="영어 기사, 이메일, 또는 텍스트를 여기에 붙여넣으세요..."
             className="w-full resize-none rounded-xl border bg-card p-6 font-serif text-lg leading-relaxed shadow-sm placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/20"
