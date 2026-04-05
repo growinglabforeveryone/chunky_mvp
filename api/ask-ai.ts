@@ -1,4 +1,4 @@
-import Anthropic from "@anthropic-ai/sdk";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
 export const config = { runtime: "edge" };
 
@@ -12,15 +12,10 @@ export default async function handler(req: Request): Promise<Response> {
     return new Response(JSON.stringify({ error: "missing fields" }), { status: 400 });
   }
 
-  const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+  const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
+  const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-lite" });
 
-  const message = await client.messages.create({
-    model: "claude-haiku-4-5-20251001",
-    max_tokens: 400,
-    messages: [
-      {
-        role: "user",
-        content: `You are an English tutor helping a Korean business professional understand a vocabulary chunk.
+  const result = await model.generateContent(`You are an English tutor helping a Korean business professional understand a vocabulary chunk.
 
 Chunk being reviewed:
 - Expression: "${phrase}"
@@ -34,17 +29,9 @@ Respond in Korean. Be concise (3-5 sentences max). Focus on:
 - The key difference or nuance they need to remember
 - One concrete example to make it stick
 
-Do NOT repeat the question. Go straight to the explanation.`,
-      },
-    ],
-  });
+Do NOT repeat the question. Go straight to the explanation.`);
 
-  const content = message.content[0];
-  if (content.type !== "text") {
-    return new Response(JSON.stringify({ error: "unexpected response" }), { status: 500 });
-  }
-
-  return new Response(JSON.stringify({ answer: content.text }), {
+  return new Response(JSON.stringify({ answer: result.response.text() }), {
     headers: { "Content-Type": "application/json" },
   });
 }

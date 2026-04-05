@@ -1,4 +1,4 @@
-import Anthropic from "@anthropic-ai/sdk";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import { checkUsage, recordUsage } from "./_lib/checkUsage";
 
 export const config = { runtime: "edge" };
@@ -22,15 +22,10 @@ export default async function handler(req: Request): Promise<Response> {
   try {
     const { text } = await req.json();
 
-    const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
+    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-lite" });
 
-    const message = await client.messages.create({
-      model: "claude-haiku-4-5-20251001",
-      max_tokens: 2048,
-      messages: [
-        {
-          role: "user",
-          content: `You are a friendly English coach for Korean learners.
+    const result = await model.generateContent(`You are a friendly English coach for Korean learners.
 
 The user spoke or typed the following English. Correct it to sound natural, then explain what you changed and why.
 
@@ -56,15 +51,9 @@ Return ONLY valid JSON (no markdown, no explanation outside JSON):
 }
 
 User's English:
-${text}`,
-        },
-      ],
-    });
+${text}`);
 
-    const content = message.content[0];
-    if (content.type !== "text") throw new Error("Unexpected response type");
-
-    const jsonText = content.text
+    const jsonText = result.response.text()
       .replace(/^```json\s*/i, "")
       .replace(/^```\s*/i, "")
       .replace(/```\s*$/i, "")

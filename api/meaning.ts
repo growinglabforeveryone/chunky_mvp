@@ -1,4 +1,4 @@
-import Anthropic from "@anthropic-ai/sdk";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
 export const config = { runtime: "edge" };
 
@@ -10,23 +10,12 @@ export default async function handler(req: Request): Promise<Response> {
   try {
     const { phrase } = await req.json();
 
-    const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
+    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-lite" });
 
-    const message = await client.messages.create({
-      model: "claude-haiku-4-5-20251001",
-      max_tokens: 100,
-      messages: [
-        {
-          role: "user",
-          content: `"${phrase}"의 한국어 뜻을 간결하게 알려주세요. 뜻만 답하세요. 예: "~를 기대하다"`,
-        },
-      ],
-    });
+    const result = await model.generateContent(`"${phrase}"의 한국어 뜻을 간결하게 알려주세요. 뜻만 답하세요. 예: "~를 기대하다"`);
 
-    const content = message.content[0];
-    if (content.type !== "text") throw new Error("Unexpected response type");
-
-    return new Response(JSON.stringify({ meaning: content.text.trim() }), {
+    return new Response(JSON.stringify({ meaning: result.response.text().trim() }), {
       headers: { "Content-Type": "application/json" },
     });
   } catch (error) {
