@@ -11,7 +11,7 @@ export default async function handler(req: Request): Promise<Response> {
     const { phrase } = await req.json();
 
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
-    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-lite" });
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
 
     const result = await model.generateContent(`"${phrase}"의 한국어 뜻을 간결하게 알려주세요. 뜻만 답하세요. 예: "~를 기대하다"`);
 

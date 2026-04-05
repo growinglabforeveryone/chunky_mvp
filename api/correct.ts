@@ -23,7 +23,7 @@ export default async function handler(req: Request): Promise<Response> {
     const { text } = await req.json();
 
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
-    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-lite" });
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
 
     const result = await model.generateContent(`You are a friendly English coach for Korean learners.
 
