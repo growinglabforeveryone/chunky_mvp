@@ -208,12 +208,15 @@ export default function DashboardPage() {
                       <p className="text-lg font-bold text-foreground whitespace-nowrap">{stats.dueToday}개</p>
                     )}
                     <p className="text-xs text-muted-foreground whitespace-nowrap">
-                      {stats.reviewDoneToday
-                        ? `오늘 ${stats.reviewedToday}개 복습 완료`
-                        : "오늘 복습할 표현"}
+                      {stats.reviewDoneToday ? "오늘의 복습 끝!" : "오늘 복습할 표현"}
                     </p>
                   </div>
                 </div>
+                <p className="mt-3 text-xs font-medium text-muted-foreground">
+                  {stats.reviewDoneToday
+                    ? `${stats.reviewedToday}개 복습 완료`
+                    : "탭해서 복습 시작 →"}
+                </p>
               </CardContent>
             </Card>
           </Link>
