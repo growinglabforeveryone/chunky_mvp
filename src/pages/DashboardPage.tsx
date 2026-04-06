@@ -168,7 +168,7 @@ export default function DashboardPage() {
               : `🔥 ${stats.streak}일 연속!`;
             return (
               <Card className="border-none bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-950/30 dark:to-amber-950/30 h-full">
-                <CardContent className="p-4">
+                <CardContent className="flex h-full flex-col justify-between p-4">
                   <div className="flex items-center gap-2.5">
                     <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-accent/30">
                       <img src={slimeImg} alt="청키" className="w-8 h-8" style={{ imageRendering: "pixelated" }}/>
@@ -178,15 +178,17 @@ export default function DashboardPage() {
                       {streakMsg && <p className="text-xs text-muted-foreground whitespace-nowrap">{streakMsg}</p>}
                     </div>
                   </div>
-                  <div className="mt-3 h-1.5 w-full rounded-full bg-black/5 dark:bg-white/10 overflow-hidden">
-                    <motion.div
-                      className="h-full rounded-full bg-gradient-to-r from-amber-400 to-orange-500"
-                      initial={{ width: 0 }}
-                      animate={{ width: `${progressPercent}%` }}
-                      transition={{ duration: 0.8, ease: "easeOut" }}
-                    />
+                  <div>
+                    <div className="h-1.5 w-full rounded-full bg-black/5 dark:bg-white/10 overflow-hidden">
+                      <motion.div
+                        className="h-full rounded-full bg-gradient-to-r from-amber-400 to-orange-500"
+                        initial={{ width: 0 }}
+                        animate={{ width: `${progressPercent}%` }}
+                        transition={{ duration: 0.8, ease: "easeOut" }}
+                      />
+                    </div>
+                    <p className="mt-1 text-[10px] text-muted-foreground">{totalXP} / {nextThreshold} XP</p>
                   </div>
-                  <p className="mt-1 text-[10px] text-muted-foreground">{totalXP} / {nextThreshold} XP</p>
                 </CardContent>
               </Card>
             );
@@ -196,7 +198,7 @@ export default function DashboardPage() {
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="h-full">
           <Link to="/review" className="block h-full">
             <Card className={`border-none h-full transition-opacity hover:opacity-80 ${stats.reviewDoneToday ? "bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30" : "bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30"}`}>
-              <CardContent className="p-4">
+              <CardContent className="flex h-full flex-col justify-between p-4">
                 <div className="flex items-center gap-2.5">
                   <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${stats.reviewDoneToday ? "bg-green-500/10 text-green-600" : "bg-primary/10 text-primary"}`}>
                     {stats.reviewDoneToday ? <CheckCircle2 className="h-5 w-5" /> : <BookOpen className="h-5 w-5" />}
@@ -212,9 +214,9 @@ export default function DashboardPage() {
                     </p>
                   </div>
                 </div>
-                <p className="mt-3 text-xs font-medium text-muted-foreground">
+                <p className="text-[10px] font-medium text-muted-foreground">
                   {stats.reviewDoneToday
-                    ? `${stats.reviewedToday}개 복습 완료`
+                    ? `오늘 ${stats.reviewedToday}개 복습 완료`
                     : "탭해서 복습 시작 →"}
                 </p>
               </CardContent>
