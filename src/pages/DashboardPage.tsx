@@ -1,11 +1,12 @@
 import { useChunkStore } from "@/store/chunkStore";
 import { useUsageStore, FREE_AI_LIMIT, FREE_VOCAB_LIMIT } from "@/store/usageStore";
+import { useLevelStore, getSlimeForLevel, getXPForNextLevel, getCurrentLevelThreshold } from "@/store/levelStore";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Link } from "react-router-dom";
 import { BookOpen, Library, Layers, Trophy, CheckCircle2, Circle, Sparkles } from "lucide-react";
 import { motion } from "framer-motion";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import ActivityHeatmap from "@/components/ActivityHeatmap";
 import OnboardingWelcome, { ONBOARDING_KEY } from "@/components/OnboardingWelcome";
 
@@ -16,7 +17,6 @@ function isSameDay(d1: Date, d2: Date) {
 function getStreak(chunks: { createdAt: string; status?: string; reviewStage?: number; lastReviewedAt?: string }[]) {
   const activityDates = new Set<string>();
   for (const c of chunks) {
-    activityDates.add(new Date(c.createdAt).toDateString());
     if (c.lastReviewedAt) {
       activityDates.add(new Date(c.lastReviewedAt).toDateString());
     }
@@ -55,11 +55,20 @@ const MOTIVATIONAL_COPIES = [
 export default function DashboardPage() {
   const { savedChunks, isLoadingSaved } = useChunkStore();
   const { tier, usedThisMonth, isLoaded: usageLoaded } = useUsageStore();
+  const { totalXP, level, isLoaded: levelLoaded, lastLevelUp, clearLevelUp, backfillXP } = useLevelStore();
   const dailySubcopy = MOTIVATIONAL_COPIES[new Date().getDate() % MOTIVATIONAL_COPIES.length];
 
   const [showOnboarding, setShowOnboarding] = useState(() => {
     return !localStorage.getItem(ONBOARDING_KEY);
   });
+
+  // 기존 사용자 XP 백필
+  useEffect(() => {
+    if (levelLoaded && !isLoadingSaved && savedChunks.length > 0 && totalXP === 0) {
+      backfillXP(savedChunks);
+    }
+  }, [levelLoaded, isLoadingSaved, savedChunks, totalXP, backfillXP]);
+
 
   const stats = useMemo(() => {
     const today = new Date();
@@ -99,7 +108,7 @@ export default function DashboardPage() {
       reviewDoneToday,
       addedToday: addedToday.length,
       streak,
-      studiedToday: reviewedToday.length > 0 || addedToday.length > 0,
+      studiedToday: reviewedToday.length > 0,
       masteredPercent: savedChunks.length > 0 ? Math.round((mastered.length / savedChunks.length) * 100) : 0,
     };
   }, [savedChunks]);
@@ -144,55 +153,68 @@ export default function DashboardPage() {
         </p>
       </motion.div>
 
-      {/* Streak & Today Status */}
+      {/* Chunky Level & Today Status */}
       <div className="mb-6 grid grid-cols-2 gap-4">
-        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}>
+        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }} className="h-full">
           {(() => {
-            const slimeImg = stats.streak === 0 ? "/slimes/crying.svg"
-              : stats.streak === 1 ? "/slimes/neutral.svg"
-              : stats.streak < 7  ? "/slimes/happy.svg"
-              : "/slimes/crown.svg";
-            const msg = stats.streak === 0 ? "오늘부터 다시!"
-              : stats.streak === 1 ? "시작이 반이에요"
-              : stats.streak < 7  ? "잘 하고 있어요!"
-              : "완전 진심이네요 🔥";
+            const slimeImg = getSlimeForLevel(level);
+            const currentThreshold = getCurrentLevelThreshold(level);
+            const nextThreshold = getXPForNextLevel(level);
+            const progressXP = totalXP - currentThreshold;
+            const neededXP = nextThreshold - currentThreshold;
+            const progressPercent = neededXP > 0 ? Math.min(100, Math.round((progressXP / neededXP) * 100)) : 100;
+            const streakMsg = stats.streak === 0 ? ""
+              : stats.streak < 7 ? `🔥 ${stats.streak}일 연속`
+              : `🔥 ${stats.streak}일 연속!`;
             return (
-              <Card className="border-none bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-950/30 dark:to-amber-950/30">
-                <CardContent className="flex items-center gap-4 p-5">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-accent/30">
-                    <img src={slimeImg} alt="slime" className="w-10 h-10" style={{ imageRendering: "pixelated" }}/>
+              <Card className="border-none bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-950/30 dark:to-amber-950/30 h-full">
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-2.5">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-accent/30">
+                      <img src={slimeImg} alt="청키" className="w-8 h-8" style={{ imageRendering: "pixelated" }}/>
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-lg font-bold text-foreground leading-tight">Lv.{level}</p>
+                      {streakMsg && <p className="text-xs text-muted-foreground whitespace-nowrap">{streakMsg}</p>}
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-2xl font-bold text-foreground">{stats.streak}일</p>
-                    <p className="text-sm text-muted-foreground">{msg}</p>
+                  <div className="mt-3 h-1.5 w-full rounded-full bg-black/5 dark:bg-white/10 overflow-hidden">
+                    <motion.div
+                      className="h-full rounded-full bg-gradient-to-r from-amber-400 to-orange-500"
+                      initial={{ width: 0 }}
+                      animate={{ width: `${progressPercent}%` }}
+                      transition={{ duration: 0.8, ease: "easeOut" }}
+                    />
                   </div>
+                  <p className="mt-1 text-[10px] text-muted-foreground">{totalXP} / {nextThreshold} XP</p>
                 </CardContent>
               </Card>
             );
           })()}
         </motion.div>
 
-        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
-          <Card className={`border-none ${stats.reviewDoneToday ? "bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30" : "bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30"}`}>
-            <CardContent className="flex items-center gap-4 p-5">
-              <div className={`flex h-12 w-12 items-center justify-center rounded-xl ${stats.reviewDoneToday ? "bg-green-500/10 text-green-600" : "bg-primary/10 text-primary"}`}>
-                {stats.reviewDoneToday ? <CheckCircle2 className="h-6 w-6" /> : <BookOpen className="h-6 w-6" />}
-              </div>
-              <div>
-                {stats.reviewDoneToday ? (
-                  <>
-                    <p className="text-2xl font-bold text-green-600">완료 ✓</p>
-                    <p className="text-sm text-muted-foreground">오늘 {stats.reviewedToday}개 복습 완료</p>
-                  </>
-                ) : (
-                  <>
-                    <p className="text-2xl font-bold text-foreground">{stats.dueToday}개</p>
-                    <p className="text-sm text-muted-foreground">오늘 복습할 표현</p>
-                  </>
-                )}
-              </div>
-            </CardContent>
-          </Card>
+        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="h-full">
+          <Link to="/review" className="block h-full">
+            <Card className={`border-none h-full transition-opacity hover:opacity-80 ${stats.reviewDoneToday ? "bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30" : "bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30"}`}>
+              <CardContent className="flex h-full flex-col justify-center p-4">
+                <div className="flex items-center gap-2.5">
+                  <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${stats.reviewDoneToday ? "bg-green-500/10 text-green-600" : "bg-primary/10 text-primary"}`}>
+                    {stats.reviewDoneToday ? <CheckCircle2 className="h-5 w-5" /> : <BookOpen className="h-5 w-5" />}
+                  </div>
+                  {stats.reviewDoneToday ? (
+                    <p className="text-xl font-bold text-green-600 whitespace-nowrap">완료 ✓</p>
+                  ) : (
+                    <p className="text-xl font-bold text-foreground whitespace-nowrap">{stats.dueToday}개</p>
+                  )}
+                </div>
+                <p className="mt-2 text-xs text-muted-foreground">
+                  {stats.reviewDoneToday
+                    ? `오늘 ${stats.reviewedToday}개 복습 완료`
+                    : "오늘 복습할 표현"}
+                </p>
+              </CardContent>
+            </Card>
+          </Link>
         </motion.div>
       </div>
 
@@ -249,9 +271,16 @@ export default function DashboardPage() {
               <span className="text-sm font-semibold text-primary">{stats.masteredPercent}%</span>
             </div>
             <Progress value={stats.masteredPercent} className="h-2.5" />
-            <p className="mt-2 text-xs text-muted-foreground">
-              {stats.mastered} / {stats.total} 표현 마스터
-            </p>
+            <div className="mt-2 flex items-center justify-between">
+              <p className="text-xs text-muted-foreground">
+                {stats.mastered} / {stats.total} 표현 마스터
+              </p>
+              {usageLoaded && tier === "free" && (
+                <p className="text-xs text-muted-foreground">
+                  단어장 {stats.active}/{FREE_VOCAB_LIMIT}개
+                </p>
+              )}
+            </div>
           </CardContent>
         </Card>
       </motion.div>
@@ -266,17 +295,12 @@ export default function DashboardPage() {
                   <Sparkles className="h-4 w-4 text-accent-foreground" />
                   <span className="text-sm font-medium text-foreground">이번 달 AI 사용량</span>
                 </div>
-                <span className="text-sm font-semibold text-primary">{usedThisMonth}/{FREE_AI_LIMIT}회</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-semibold text-primary">{usedThisMonth}/{FREE_AI_LIMIT}회</span>
+                  <span className="text-xs text-muted-foreground">· 매월 1일 초기화</span>
+                </div>
               </div>
               <Progress value={(usedThisMonth / FREE_AI_LIMIT) * 100} className="h-2.5" />
-              <div className="mt-2 flex items-center justify-between">
-                <p className="text-xs text-muted-foreground">
-                  단어장 {stats.active}/{FREE_VOCAB_LIMIT}개 (누적)
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  AI 횟수만 매월 1일 초기화
-                </p>
-              </div>
             </CardContent>
           </Card>
         </motion.div>

@@ -3,6 +3,7 @@ import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useEffect } from "react";
+import { toast } from "sonner";
 import AppNav from "@/components/AppNav";
 import DashboardPage from "@/pages/DashboardPage";
 import ExtractPage from "@/pages/ExtractPage";
@@ -14,6 +15,7 @@ import LandingPage from "@/pages/LandingPage";
 import NotFound from "@/pages/NotFound";
 import { useChunkStore } from "@/store/chunkStore";
 import { useUsageStore } from "@/store/usageStore";
+import { useLevelStore } from "@/store/levelStore";
 import { useAuth } from "@/hooks/useAuth";
 
 const queryClient = new QueryClient();
@@ -22,13 +24,27 @@ function AppContent() {
   const { session, loading } = useAuth();
   const loadSavedChunks = useChunkStore((s) => s.loadSavedChunks);
   const loadUsage = useUsageStore((s) => s.loadUsage);
+  const loadXP = useLevelStore((s) => s.loadXP);
+  const { lastLevelUp, clearLevelUp } = useLevelStore();
 
   useEffect(() => {
     if (session) {
       loadSavedChunks();
       loadUsage();
+      loadXP();
     }
-  }, [session, loadSavedChunks, loadUsage]);
+  }, [session, loadSavedChunks, loadUsage, loadXP]);
+
+  // 어느 페이지에서든 레벨업 즉시 토스트
+  useEffect(() => {
+    if (lastLevelUp) {
+      toast.success(`Lv.${lastLevelUp} 달성!`, {
+        description: "청키가 한 단계 성장했어요 🎉",
+        duration: 4000,
+      });
+      clearLevelUp();
+    }
+  }, [lastLevelUp, clearLevelUp]);
 
   if (loading) {
     return (

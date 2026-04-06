@@ -39,11 +39,11 @@ export default function LandingPage() {
               Lexical Chunks + 에빙하우스 복습법
             </div>
             <h1 className="text-4xl font-bold leading-tight tracking-tight text-foreground sm:text-5xl lg:text-[3.25rem]">
-              읽고, 말하고, 듣는 영어가<br />
-              <span className="text-primary">내 단어장</span>이 된다
+              읽고, 듣고, 말하는 영어가<br />
+              <span className="text-primary">나만의 단어장</span>이 된다
             </h1>
-            <p className="mt-5 text-lg leading-relaxed text-muted-foreground">
-              이메일, 회의, 영어 수업, 유튜브 —
+            <p className="mt-5 text-base sm:text-lg leading-relaxed text-muted-foreground break-keep">
+              이메일, 회의, 영어 수업, 유튜브 —<br />
               AI가 핵심 표현을 뽑고, 잊기 전에 복습시켜 드립니다.
             </p>
             <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row lg:justify-start">
@@ -67,7 +67,7 @@ export default function LandingPage() {
       {/* TRUST BADGES */}
       <section className="border-y bg-muted/40">
         <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6">
-          <div className="flex flex-wrap items-center justify-center gap-6 sm:gap-10">
+          <div className="flex flex-col items-center gap-6 sm:flex-row sm:flex-wrap sm:justify-center sm:gap-10">
             <TrustBadge icon="📈" label="과학 기반 복습" sub="잊기 직전 타이밍에 자동 복습" />
             <div className="hidden h-8 w-px bg-border sm:block" />
             <TrustBadge icon="💬" label="단어뭉치 학습법" sub="2~4단어 덩어리 = 실전 영어의 핵심" />
@@ -83,7 +83,7 @@ export default function LandingPage() {
           <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
             어떤 영어든, 내 단어장으로
           </h2>
-          <p className="mt-3 text-muted-foreground">읽거나 들은 영어에서 단어뭉치를 뽑아 드립니다</p>
+          <p className="mt-3 text-sm text-muted-foreground break-keep">이메일, 기사, 유튜브 자막 —<br className="sm:hidden" /> 붙여넣으면 AI가 단어뭉치를 자동 추출합니다</p>
         </div>
 
         <div className="grid gap-8 md:grid-cols-2">
@@ -94,12 +94,10 @@ export default function LandingPage() {
             mockup={<ExtractMockup />}
           />
           <StepCard
-            step="듣기"
-            title="유튜브 영상에서 추출"
-            desc="유튜브 링크만 넣으면 자막에서 단어뭉치를 자동 추출합니다"
-            mockup={<ListenMockup />}
-            comingSoon
-            comingSoonLabel="곧 출시"
+            step="유튜브"
+            title="유튜브 자막 붙여넣기"
+            desc="유튜브 자막을 복사해서 붙여넣으면 타임스탬프를 자동 제거하고 단어뭉치를 추출합니다"
+            mockup={<YoutubeMockup />}
           />
         </div>
 
@@ -132,8 +130,8 @@ export default function LandingPage() {
             <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
               뽑은 표현, 잊기 전에 복습
             </h2>
-            <p className="mt-3 text-muted-foreground">
-              AI가 2~4개 단위 표현을 원문 예문과 함께 저장하고, 에빙하우스 곡선에 맞춰 복습시켜 드립니다
+            <p className="mt-3 text-sm text-muted-foreground break-keep">
+              AI가 2~4개 단위 표현을 원문 예문과 함께 저장하고,<br className="sm:hidden" /> 에빙하우스 곡선에 맞춰 복습시켜 드립니다
             </p>
           </div>
           <div className="grid gap-8 md:grid-cols-2">
@@ -162,7 +160,7 @@ export default function LandingPage() {
             <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
               왜 내 콘텐츠여야 할까요?
             </h2>
-            <p className="mt-3 text-muted-foreground">
+            <p className="mt-3 text-sm text-muted-foreground break-keep">
               같은 단어도, 내가 읽은 문장에서 만났을 때 기억에 남습니다
             </p>
           </div>
@@ -212,7 +210,7 @@ export default function LandingPage() {
             <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
               왜 단어 1개가 아닌 단어뭉치일까요?
             </h2>
-            <p className="mt-3 text-muted-foreground">
+            <p className="mt-3 text-sm text-muted-foreground break-keep">
               언어학자들이 수십 년간 연구해 찾아낸 답입니다
             </p>
           </div>
@@ -384,7 +382,7 @@ function HeroMockup() {
         <div className="flex items-center justify-between border-b bg-card px-4 py-3">
           <span className="text-xs font-extrabold" style={{ fontFamily: "'Nunito', sans-serif" }}>Chunky</span>
           <div className="flex gap-2 text-[10px] text-muted-foreground">
-            <span>읽기</span><span>말하기</span><span>듣기</span><span className="text-primary font-medium">복습</span><span>라이브러리</span>
+            <span>읽기</span><span>말하기</span><span className="text-primary font-medium">복습</span><span>라이브러리</span>
           </div>
         </div>
         {/* Content */}
@@ -472,38 +470,44 @@ function SpeakMockup() {
   return (
     <div className="p-4 space-y-2">
       <p className="text-[10px] font-medium text-muted-foreground">영어로 써보기</p>
-      <div className="rounded-lg border bg-background p-3 text-[10px] leading-relaxed text-foreground">
-        "I want to discuse about the new project timeline with the team."
+      <div className="rounded-lg border bg-background p-3 text-[10px] leading-relaxed text-foreground/70">
+        "I am sorry for late reply. I was very busy these days and forgot to response you."
       </div>
-      <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 text-[10px] leading-relaxed">
+      <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 text-[10px] leading-relaxed space-y-1.5">
         <span className="text-[9px] font-medium text-primary">AI 교정 →</span>
-        <p className="mt-1 text-foreground">"I want to <span className="bg-green-100 text-green-800 rounded px-0.5">discuss</span> the new project timeline with the team."</p>
+        <p className="text-foreground font-medium">"Apologies for the <span className="bg-green-100 text-green-800 rounded px-0.5">delayed response</span> — <span className="bg-green-100 text-green-800 rounded px-0.5">I've been swamped</span> lately."</p>
+        <div className="rounded bg-amber-50 border border-amber-200 px-2 py-1.5">
+          <p className="text-[8px] font-medium text-amber-700 mb-0.5">대안 표현</p>
+          <p className="text-[9px] text-amber-900">"Sorry for the radio silence — it's been a whirlwind week on my end."</p>
+        </div>
       </div>
-      <p className="text-[9px] text-muted-foreground text-center">교정 후 단어뭉치도 자동 추출됩니다</p>
     </div>
   );
 }
 
-function ListenMockup() {
+function YoutubeMockup() {
   return (
     <div className="p-4 space-y-2">
-      <p className="text-[10px] font-medium text-muted-foreground">유튜브 링크 붙여넣기</p>
-      <div className="rounded-lg border bg-background px-3 py-2.5 text-[10px] text-muted-foreground flex items-center gap-2">
-        <div className="h-3.5 w-3.5 rounded-sm bg-red-500 flex items-center justify-center">
+      <div className="flex items-center gap-1.5">
+        <div className="h-3.5 w-3.5 rounded-sm bg-red-500 flex items-center justify-center flex-shrink-0">
           <span className="text-[7px] text-white font-bold">▶</span>
         </div>
-        youtube.com/watch?v=...
+        <p className="text-[10px] font-medium text-muted-foreground">유튜브 자막 붙여넣기</p>
       </div>
-      <div className="rounded-lg border bg-background p-3 text-[10px] leading-relaxed text-muted-foreground">
-        <span className="text-[9px] font-medium text-foreground">자막에서 추출:</span>
-        <p className="mt-1">
-          "...you need to{" "}
-          <span className="bg-yellow-100 text-yellow-800 rounded px-0.5">break it down</span>{" "}
-          into smaller chunks and{" "}
-          <span className="bg-yellow-100 text-yellow-800 rounded px-0.5">build up</span>{" "}
-          from there..."
-        </p>
+      <div className="rounded-lg border bg-background p-2.5 text-[9px] leading-relaxed text-muted-foreground font-mono">
+        <span className="text-muted-foreground/50">0:12</span> you need to{" "}
+        <span className="bg-yellow-100 text-yellow-800 rounded px-0.5">build on top of</span>{" "}
+        what you already know<br />
+        <span className="text-muted-foreground/50">0:18</span> and{" "}
+        <span className="bg-yellow-100 text-yellow-800 rounded px-0.5">work your way up</span>{" "}
+        from there
       </div>
+      <div className="flex items-center gap-1.5 rounded-lg bg-green-50 border border-green-200 px-2.5 py-1.5">
+        <span className="text-[8px] text-green-700 font-medium">✓ 타임스탬프 자동 제거</span>
+      </div>
+      <button className="w-full rounded-lg bg-primary py-2 text-[10px] font-semibold text-primary-foreground">
+        ✨ AI로 단어뭉치 추출
+      </button>
     </div>
   );
 }

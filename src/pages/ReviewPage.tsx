@@ -1,5 +1,6 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { useChunkStore } from "@/store/chunkStore";
+import { useLevelStore } from "@/store/levelStore";
 import { Chunk } from "@/types/chunk";
 import { motion, AnimatePresence } from "framer-motion";
 import { RotateCcw, Shuffle, X, Check, ChevronDown, MinusCircle, MessageCircle, Send } from "lucide-react";
@@ -11,18 +12,21 @@ type Mode = "kr-to-en" | "en-to-kr";
 const STAGE_LABELS = ["신규", "1일", "7일", "30일", "완료"];
 const NEXT_REVIEW_LABELS = ["", "1일 뒤", "7일 뒤", "30일 뒤"];
 
-function isDue(chunk: { reviewStage?: number; nextReviewAt?: string; mastered?: boolean; status?: string }) {
+function isDue(chunk: { reviewStage?: number; nextReviewAt?: string; mastered?: boolean; status?: string }, refTime: Date) {
   if (chunk.mastered) return false;
   if (chunk.status === "excluded") return false;
   if ((chunk.reviewStage ?? 0) === 0) return true;
   if (!chunk.nextReviewAt) return true;
-  return new Date(chunk.nextReviewAt) <= new Date();
+  return new Date(chunk.nextReviewAt) <= refTime;
 }
 
 export default function ReviewPage() {
   const { savedChunks, advanceChunk, resetChunk, excludeChunk } = useChunkStore();
+  const { totalXP, level } = useLevelStore();
+  const xpAtStart = useRef(totalXP);
 
   // Session queue — managed independently from dueCards after initialization
+  const [sessionRefTime, setSessionRefTime] = useState(() => new Date());
   const [sessionQueue, setSessionQueue] = useState<Chunk[]>([]);
   const [failedIds, setFailedIds] = useState<Set<string>>(new Set());
   const [sessionInitialized, setSessionInitialized] = useState(false);
@@ -44,7 +48,7 @@ export default function ReviewPage() {
     today.setHours(0, 0, 0, 0);
 
     const due = savedChunks.filter((c) => {
-      if (!isDue(c)) return false;
+      if (!isDue(c, sessionRefTime)) return false;
       if (c.lastReviewedAt) {
         const reviewed = new Date(c.lastReviewedAt);
         reviewed.setHours(0, 0, 0, 0);
@@ -58,7 +62,7 @@ export default function ReviewPage() {
       if ((a.reviewStage ?? 0) !== 0 && (b.reviewStage ?? 0) === 0) return 1;
       return new Date(a.nextReviewAt ?? 0).getTime() - new Date(b.nextReviewAt ?? 0).getTime();
     });
-  }, [savedChunks]);
+  }, [savedChunks, sessionRefTime]);
 
   // Initialize session once when dueCards become available
   useEffect(() => {
@@ -179,6 +183,7 @@ export default function ReviewPage() {
   };
 
   const handleRestart = () => {
+    setSessionRefTime(new Date());
     setIsComplete(false);
     setSessionInitialized(false);
     setSessionQueue([]);
@@ -200,6 +205,7 @@ export default function ReviewPage() {
   if (isComplete) {
     const retriedCount = failedIds.size;
     const perfectCount = sessionTotal - retriedCount;
+    const earnedXP = totalXP - xpAtStart.current;
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
         <div className="text-center space-y-5">
@@ -209,6 +215,9 @@ export default function ReviewPage() {
             <p className="text-green-600 font-medium">처음부터 알았어요 {perfectCount}개</p>
             {retriedCount > 0 && (
               <p className="text-amber-600">재시도 후 성공 {retriedCount}개</p>
+            )}
+            {earnedXP > 0 && (
+              <p className="text-primary font-semibold">+{earnedXP} XP (Lv.{level})</p>
             )}
           </div>
           <button

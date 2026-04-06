@@ -1,0 +1,2 @@
+-- profiles에 XP 컬럼 추가
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS total_xp INTEGER NOT NULL DEFAULT 0;

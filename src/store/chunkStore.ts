@@ -2,6 +2,7 @@ import { Chunk } from "@/types/chunk";
 import { create } from "zustand";
 import { supabase } from "@/lib/supabaseClient";
 import { useUsageStore, FREE_VOCAB_LIMIT } from "@/store/usageStore";
+import { useLevelStore, XP_REWARDS } from "@/store/levelStore";
 
 export class VocabLimitError extends Error {
   current: number;
@@ -123,6 +124,9 @@ export const useChunkStore = create<ChunkStore>((set, get) => ({
       sourceText: "",
       sourceName: "",
     }));
+
+    // XP 부여: 저장한 청크 수 × 5
+    useLevelStore.getState().addXP(newChunks.length * XP_REWARDS.SAVE_CHUNK, "save");
   },
 
   updateSavedChunk: async (id, updates) => {
@@ -157,6 +161,9 @@ export const useChunkStore = create<ChunkStore>((set, get) => ({
         c.id === id ? { ...c, mastered: true, reviewStage: 4, status: "mastered" as const } : c
       ),
     }));
+
+    // XP 부여: 마스터 달성
+    useLevelStore.getState().addXP(XP_REWARDS.MASTER, "master");
   },
 
   // 알았어요 — 다음 단계로 진급
@@ -168,8 +175,10 @@ export const useChunkStore = create<ChunkStore>((set, get) => ({
     const newStage = currentStage + 1;
 
     if (newStage >= 4) {
-      // 4단계 완료 → 마스터
+      // 4단계 완료 → 마스터 (masterChunk 안에서 마스터 XP 부여)
       await get().masterChunk(id);
+      // 복습 XP도 부여
+      useLevelStore.getState().addXP(XP_REWARDS.REVIEW, "review");
       return;
     }
 
@@ -186,6 +195,9 @@ export const useChunkStore = create<ChunkStore>((set, get) => ({
         c.id === id ? { ...c, reviewStage: newStage, nextReviewAt, lastReviewedAt, status: "active" as const } : c
       ),
     }));
+
+    // XP 부여: 복습 완료
+    useLevelStore.getState().addXP(XP_REWARDS.REVIEW, "review");
   },
 
   // 몰랐어요
@@ -194,8 +206,6 @@ export const useChunkStore = create<ChunkStore>((set, get) => ({
     if (!chunk) return;
 
     if ((chunk.reviewStage ?? 0) === 0) {
-      // 신규 카드 → stage는 그대로, 세션 내 재등장 허용
-      // 단, lastReviewedAt은 기록해서 다음 방문 시 오늘 복습한 걸로 처리
       const lastReviewedAt = new Date().toISOString();
       await supabase.from("vocabulary").update({ last_reviewed_at: lastReviewedAt }).eq("id", id);
       set((s) => ({
@@ -203,6 +213,7 @@ export const useChunkStore = create<ChunkStore>((set, get) => ({
           c.id === id ? { ...c, lastReviewedAt } : c
         ),
       }));
+      useLevelStore.getState().addXP(XP_REWARDS.REVIEW, "review");
       return;
     }
 
@@ -219,6 +230,8 @@ export const useChunkStore = create<ChunkStore>((set, get) => ({
         c.id === id ? { ...c, reviewStage: 1, nextReviewAt, lastReviewedAt, status: "active" as const } : c
       ),
     }));
+
+    useLevelStore.getState().addXP(XP_REWARDS.REVIEW, "review");
   },
 
   // 이 단어 제외 (소프트 삭제)
