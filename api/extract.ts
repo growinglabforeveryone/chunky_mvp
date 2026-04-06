@@ -110,7 +110,10 @@ export default async function handler(req: Request): Promise<Response> {
     if (!text) throw new Error("empty text");
 
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
+    const model = genAI.getGenerativeModel({
+      model: "gemini-2.5-flash",
+      generationConfig: { thinkingConfig: { thinkingBudget: 0 } } as never,
+    });
 
     // 1200자씩 최대 4구간 균등 분배 → 병렬 추출
     const SEGMENT_CHARS = 1200;
@@ -141,7 +144,9 @@ export default async function handler(req: Request): Promise<Response> {
         createdAt: new Date().toISOString(),
       }));
 
-    await recordUsage(userId, "extract");
+    if (chunks.length > 0) {
+      await recordUsage(userId, "extract");
+    }
 
     return new Response(JSON.stringify({ chunks }), {
       headers: { "Content-Type": "application/json" },
