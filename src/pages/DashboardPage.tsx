@@ -196,22 +196,24 @@ export default function DashboardPage() {
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="h-full">
           <Link to="/review" className="block h-full">
             <Card className={`border-none h-full transition-opacity hover:opacity-80 ${stats.reviewDoneToday ? "bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30" : "bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30"}`}>
-              <CardContent className="flex h-full flex-col justify-center p-4">
+              <CardContent className="p-4">
                 <div className="flex items-center gap-2.5">
                   <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${stats.reviewDoneToday ? "bg-green-500/10 text-green-600" : "bg-primary/10 text-primary"}`}>
                     {stats.reviewDoneToday ? <CheckCircle2 className="h-5 w-5" /> : <BookOpen className="h-5 w-5" />}
                   </div>
-                  {stats.reviewDoneToday ? (
-                    <p className="text-xl font-bold text-green-600 whitespace-nowrap">완료 ✓</p>
-                  ) : (
-                    <p className="text-xl font-bold text-foreground whitespace-nowrap">{stats.dueToday}개</p>
-                  )}
+                  <div className="min-w-0">
+                    {stats.reviewDoneToday ? (
+                      <p className="text-lg font-bold text-green-600 whitespace-nowrap">완료 ✓</p>
+                    ) : (
+                      <p className="text-lg font-bold text-foreground whitespace-nowrap">{stats.dueToday}개</p>
+                    )}
+                    <p className="text-xs text-muted-foreground whitespace-nowrap">
+                      {stats.reviewDoneToday
+                        ? `오늘 ${stats.reviewedToday}개 복습 완료`
+                        : "오늘 복습할 표현"}
+                    </p>
+                  </div>
                 </div>
-                <p className="mt-2 text-xs text-muted-foreground">
-                  {stats.reviewDoneToday
-                    ? `오늘 ${stats.reviewedToday}개 복습 완료`
-                    : "오늘 복습할 표현"}
-                </p>
               </CardContent>
             </Card>
           </Link>
