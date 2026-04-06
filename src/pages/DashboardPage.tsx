@@ -154,8 +154,8 @@ export default function DashboardPage() {
       </motion.div>
 
       {/* Chunky Level & Today Status */}
-      <div className="mb-6 grid grid-cols-2 gap-4">
-        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }} className="h-full">
+      <div className="mb-6 grid grid-cols-2 gap-3">
+        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}>
           {(() => {
             const slimeImg = getSlimeForLevel(level);
             const currentThreshold = getCurrentLevelThreshold(level);
@@ -167,8 +167,8 @@ export default function DashboardPage() {
               : stats.streak < 7 ? `🔥 ${stats.streak}일 연속`
               : `🔥 ${stats.streak}일 연속!`;
             return (
-              <Card className="border-none bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-950/30 dark:to-amber-950/30 h-full">
-                <CardContent className="flex h-full flex-col justify-between p-4">
+              <Card className="border-none bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-950/30 dark:to-amber-950/30">
+                <CardContent className="p-4 space-y-3">
                   <div className="flex items-center gap-2.5">
                     <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-accent/30">
                       <img src={slimeImg} alt="청키" className="w-8 h-8" style={{ imageRendering: "pixelated" }}/>
@@ -195,10 +195,10 @@ export default function DashboardPage() {
           })()}
         </motion.div>
 
-        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="h-full">
-          <Link to="/review" className="block h-full">
-            <Card className={`border-none h-full transition-opacity hover:opacity-80 ${stats.reviewDoneToday ? "bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30" : "bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30"}`}>
-              <CardContent className="flex h-full flex-col justify-between p-4">
+        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
+          <Link to="/review" className="block">
+            <Card className={`border-none transition-opacity hover:opacity-80 ${stats.reviewDoneToday ? "bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30" : "bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30"}`}>
+              <CardContent className="p-4 space-y-3">
                 <div className="flex items-center gap-2.5">
                   <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${stats.reviewDoneToday ? "bg-green-500/10 text-green-600" : "bg-primary/10 text-primary"}`}>
                     {stats.reviewDoneToday ? <CheckCircle2 className="h-5 w-5" /> : <BookOpen className="h-5 w-5" />}
