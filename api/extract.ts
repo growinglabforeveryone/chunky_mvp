@@ -120,7 +120,9 @@ export default async function handler(req: Request): Promise<Response> {
     const MAX_SEGMENTS = 4;
     const segments = sampleSegments(text, SEGMENT_CHARS, Math.min(MAX_SEGMENTS, Math.ceil(text.length / SEGMENT_CHARS)));
 
+    const t0 = Date.now();
     const rawArrays = await Promise.all(segments.map((seg) => extractFromSegment(model, seg)));
+    console.log(`[extract] model=${model.model} segments=${segments.length} elapsed=${Date.now() - t0}ms`);
     const allRaw = deduplicateChunks(rawArrays.flat());
 
     // verbatim 검증 + 원문 등장 순서 정렬
