@@ -265,7 +265,7 @@ export default function WritePracticePage() {
 
             {/* Reference sentence — the stored original example */}
             <div className="rounded-xl border bg-card p-5 space-y-2">
-              <p className="text-xs font-medium text-muted-foreground">원문 예문 (정답지)</p>
+              <p className="text-xs font-medium text-muted-foreground">원문</p>
               <p className="text-sm text-blue-700 dark:text-blue-400 leading-relaxed font-medium">
                 {current?.exampleSentence}
               </p>
