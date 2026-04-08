@@ -26,17 +26,13 @@ Reference sentence: "${referenceSentence}"
 Learner's answer: "${userAnswer}"
 
 Your task:
-1. Write short encouraging feedback in Korean (1-2 sentences): mention one thing done well and one key improvement point if needed.
-2. Provide a "naturalVersion": the most fluent, natural English version of what the learner was trying to say.
-3. Provide a "literalVersion": a version that stays closer to the reference sentence style/structure.
-
-If the learner's answer is already excellent, naturalVersion and literalVersion can be identical or nearly identical.
+1. Write short encouraging feedback in Korean (1-2 sentences): mention one thing done well and one key improvement point if needed. Be specific about grammar or vocabulary if there's an error.
+2. Provide a "naturalVersion": the most fluent, natural English version of what the learner was trying to say. Keep the learner's intent, just polish it.
 
 Return ONLY valid JSON (no markdown):
 {
   "feedback": "<encouraging feedback in Korean, 1-2 sentences>",
-  "naturalVersion": "<most natural/fluent English version>",
-  "literalVersion": "<version closer to reference sentence style>"
+  "naturalVersion": "<most natural/fluent English version of the learner's answer>"
 }`);
 
     const jsonText = aiResult.response.text()

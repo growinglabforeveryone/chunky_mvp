@@ -227,8 +227,6 @@ export default function WritePracticePage() {
 
   // ── Feedback screen ──────────────────────────────────────────
   if (phase === "feedback" && result) {
-    const showLiteralVersion = result.literalVersion !== result.naturalVersion;
-
     return (
       <div className="mx-auto max-w-xl px-6 py-10">
         <AnimatePresence mode="wait">
@@ -265,15 +263,13 @@ export default function WritePracticePage() {
               </p>
             </div>
 
-            {/* Literal version — only if different */}
-            {showLiteralVersion && (
-              <div className="rounded-xl border bg-card p-5 space-y-2">
-                <p className="text-xs font-medium text-muted-foreground">원문 느낌을 살린 버전</p>
-                <p className="text-sm text-blue-700 dark:text-blue-400 leading-relaxed font-medium">
-                  {result.literalVersion}
-                </p>
-              </div>
-            )}
+            {/* Reference sentence — the stored original example */}
+            <div className="rounded-xl border bg-card p-5 space-y-2">
+              <p className="text-xs font-medium text-muted-foreground">원문 예문 (정답지)</p>
+              <p className="text-sm text-blue-700 dark:text-blue-400 leading-relaxed font-medium">
+                {current?.exampleSentence}
+              </p>
+            </div>
 
             {/* Target phrase chip */}
             <div className="flex items-center gap-2">
