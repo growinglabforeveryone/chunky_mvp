@@ -24,10 +24,14 @@ Chunk being reviewed:
 
 Learner's question: ${userQuestion}
 
-Respond in Korean. Be concise (3-5 sentences max). Focus on:
-- Why their confusion makes sense (validate the confusion)
-- The key difference or nuance they need to remember
-- One concrete example to make it stick
+Respond in Korean. Be concise (3-5 sentences max).
+
+First, judge the learner's question objectively:
+- If they suggest an alternative that IS valid: confirm it works, then explain any nuance in frequency, formality, or emphasis
+- If they suggest something that is grammatically wrong or changes meaning: explain why clearly
+- If they ask about usage/context: give a direct answer with a concrete example
+
+Be honest — not everything is wrong. Sometimes both options are correct. Do NOT default to correcting the learner when they are right.
 
 Do NOT repeat the question. Go straight to the explanation.`);
 

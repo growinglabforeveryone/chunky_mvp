@@ -76,8 +76,8 @@ export default function ReviewPage() {
   const current = sessionQueue[0];
 
   const related = useMemo(
-    () => (current ? findRelatedPhrases(current, savedChunks, mode) : []),
-    [current, savedChunks, mode]
+    () => (current ? findRelatedPhrases(current, savedChunks) : []),
+    [current, savedChunks]
   );
 
   const advance = (newQueue: Chunk[]) => {
