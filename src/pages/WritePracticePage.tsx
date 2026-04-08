@@ -5,25 +5,12 @@ import { useLevelStore } from "@/store/levelStore";
 import { Chunk } from "@/types/chunk";
 import { WritingPracticeResult } from "@/types/writing";
 import { motion, AnimatePresence } from "framer-motion";
-import { PenLine, Star, RotateCcw, ChevronRight, Loader2, AlertCircle } from "lucide-react";
+import { PenLine, RotateCcw, ChevronRight, Loader2, AlertCircle, Check } from "lucide-react";
 import { XP_REWARDS } from "@/store/levelStore";
 import { WRITING_DAILY_LIMIT } from "@/store/writingStore";
 import { toast } from "sonner";
 
 type Phase = "start" | "practice" | "feedback" | "complete";
-
-function ScoreStars({ score }: { score: number }) {
-  return (
-    <div className="flex items-center gap-0.5">
-      {[1, 2, 3, 4, 5].map((i) => (
-        <Star
-          key={i}
-          className={`h-5 w-5 ${i <= score ? "fill-amber-400 text-amber-400" : "text-muted-foreground/30"}`}
-        />
-      ))}
-    </div>
-  );
-}
 
 export default function WritePracticePage() {
   const { savedChunks } = useChunkStore();
@@ -35,6 +22,7 @@ export default function WritePracticePage() {
     getPracticeableChunks,
     getKoreanTranslation,
     submitPractice,
+    graduateVocab,
   } = useWritingStore();
   const { totalXP, level, isLoaded: xpLoaded } = useLevelStore();
 
@@ -46,7 +34,7 @@ export default function WritePracticePage() {
   const [userAnswer, setUserAnswer] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState<WritingPracticeResult | null>(null);
-  const [sessionResults, setSessionResults] = useState<{ score: number }[]>([]);
+  const [sessionCount, setSessionCount] = useState(0);
   // XP 로드 완료 후 세션 시작 XP 캡처
   const [xpStart, setXpStart] = useState<number | null>(null);
   useEffect(() => {
@@ -59,8 +47,6 @@ export default function WritePracticePage() {
 
   const practiceableChunks = useMemo(
     () => getPracticeableChunks(savedChunks),
-    // todayCount/todayPracticedIds 변경 시 재계산되도록 deps에 포함
-    // getPracticeableChunks는 get()으로 최신 상태를 읽으므로 함수 자체는 stable
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [savedChunks, todayCount, todayPracticedIds]
   );
@@ -74,7 +60,7 @@ export default function WritePracticePage() {
     const selected = [...practiceableChunks].slice(0, availableCount);
     setQueue(selected);
     setCurrentIndex(0);
-    setSessionResults([]);
+    setSessionCount(0);
     setPhase("practice");
     await loadKoreanFor(selected[0]);
   };
@@ -100,7 +86,7 @@ export default function WritePracticePage() {
     try {
       const res = await submitPractice({ chunk: current, userAnswer: userAnswer.trim(), exampleKo });
       setResult(res);
-      setSessionResults((prev) => [...prev, { score: res.score }]);
+      setSessionCount((prev) => prev + 1);
       setPhase("feedback");
     } catch (err: unknown) {
       if (err instanceof Error && err.message === "monthly_limit") {
@@ -124,12 +110,22 @@ export default function WritePracticePage() {
     await loadKoreanFor(queue[nextIndex]);
   };
 
+  const handleGraduateAndNext = async () => {
+    if (!current) return;
+    try {
+      await graduateVocab(current.id);
+    } catch {
+      toast.error("졸업 처리 중 오류가 발생했어요.");
+    }
+    await handleNext();
+  };
+
   const handleRestart = () => {
     setPhase("start");
     setQueue([]);
     setCurrentIndex(0);
     setResult(null);
-    setSessionResults([]);
+    setSessionCount(0);
     setUserAnswer("");
     setExampleKo("");
     loadTodayPractice();
@@ -137,10 +133,6 @@ export default function WritePracticePage() {
 
   // ── Complete screen ──────────────────────────────────────────
   if (phase === "complete") {
-    const avgScore =
-      sessionResults.length > 0
-        ? Math.round((sessionResults.reduce((s, r) => s + r.score, 0) / sessionResults.length) * 10) / 10
-        : 0;
     const earnedXP = xpStart !== null ? totalXP - xpStart : 0;
 
     return (
@@ -148,12 +140,7 @@ export default function WritePracticePage() {
         <div className="text-center space-y-5 max-w-sm w-full">
           <p className="font-serif text-2xl font-semibold text-foreground">연습 완료 ✓</p>
           <div className="rounded-xl border bg-card px-8 py-5 space-y-2 text-sm">
-            <p className="text-muted-foreground">{sessionResults.length}개 표현 연습</p>
-            <div className="flex items-center justify-center gap-2">
-              <span className="text-muted-foreground">평균 점수</span>
-              <ScoreStars score={Math.round(avgScore)} />
-              <span className="font-medium text-foreground">{avgScore}점</span>
-            </div>
+            <p className="text-muted-foreground">{sessionCount}개 표현 연습 완료</p>
             {earnedXP > 0 && (
               <p className="text-primary font-semibold">+{earnedXP} XP (Lv.{level})</p>
             )}
@@ -233,17 +220,6 @@ export default function WritePracticePage() {
               )}
             </div>
           )}
-
-          <div className="rounded-xl border bg-secondary/30 p-4 space-y-2 text-xs text-muted-foreground">
-            <p className="font-medium text-foreground text-sm">채점 기준</p>
-            <div className="space-y-1">
-              <p>⭐⭐⭐⭐⭐ 표현 정확 + 문법 완벽 + 자연스러움</p>
-              <p>⭐⭐⭐⭐ 표현 정확 + 경미한 오류 1개 이하 <span className="text-primary font-medium">(졸업 기준)</span></p>
-              <p>⭐⭐⭐ 표현 사용했으나 문법 오류 2개+</p>
-              <p>⭐⭐ 표현 잘못 사용 또는 의미 왜곡</p>
-              <p>⭐ 표현 미사용 또는 완전히 다른 의미</p>
-            </div>
-          </div>
         </motion.div>
       </div>
     );
@@ -251,7 +227,7 @@ export default function WritePracticePage() {
 
   // ── Feedback screen ──────────────────────────────────────────
   if (phase === "feedback" && result) {
-    const isGraduated = result.score >= 4;
+    const showLiteralVersion = result.literalVersion !== result.naturalVersion;
 
     return (
       <div className="mx-auto max-w-xl px-6 py-10">
@@ -269,65 +245,61 @@ export default function WritePracticePage() {
               <span className="text-xs">+{XP_REWARDS.WRITING_PRACTICE} XP</span>
             </div>
 
-            {/* Score */}
-            <div className="rounded-xl border bg-card p-5 space-y-3">
-              <div className="flex items-center justify-between">
-                <ScoreStars score={result.score} />
-                <span className="text-sm font-medium text-muted-foreground">{result.score}점</span>
-              </div>
-              {isGraduated && (
-                <p className="text-xs font-medium text-primary bg-primary/10 rounded-lg px-3 py-1.5 inline-block">
-                  이 표현을 졸업했어요! 🎓
-                </p>
-              )}
+            {/* Korean feedback */}
+            <div className="rounded-xl border bg-card p-5">
+              <p className="text-xs font-medium text-muted-foreground mb-2">핵심 피드백</p>
               <p className="text-sm text-foreground leading-relaxed">{result.feedback}</p>
             </div>
 
-            {/* Comparison */}
-            <div className="rounded-xl border bg-card p-5 space-y-3">
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">내 답변</p>
-              <p className={`text-sm leading-relaxed ${result.targetPhraseUsed ? "text-foreground" : "text-red-600"}`}>
-                {userAnswer}
+            {/* Natural version */}
+            <div className="rounded-xl border bg-card p-5 space-y-2">
+              <p className="text-xs font-medium text-muted-foreground">자연스럽게 다듬은 버전</p>
+              <p className="text-sm text-green-700 dark:text-green-400 leading-relaxed font-medium">
+                {result.naturalVersion}
               </p>
-              {result.corrected !== userAnswer && (
-                <>
-                  <div className="border-t" />
-                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">교정</p>
-                  <p className="text-sm text-green-700 leading-relaxed">{result.corrected}</p>
-                </>
-              )}
             </div>
 
-            {/* Key issues */}
-            {result.keyIssues.length > 0 && (
-              <div className="rounded-xl border bg-amber-50 dark:bg-amber-950/20 p-4 space-y-2">
-                <p className="text-xs font-medium text-amber-700 dark:text-amber-400">핵심 포인트</p>
-                <ul className="space-y-1">
-                  {result.keyIssues.map((issue, i) => (
-                    <li key={i} className="text-sm text-amber-800 dark:text-amber-300 flex gap-2">
-                      <span className="shrink-0">•</span>
-                      <span>{issue}</span>
-                    </li>
-                  ))}
-                </ul>
+            {/* Literal version — only if different */}
+            {showLiteralVersion && (
+              <div className="rounded-xl border bg-card p-5 space-y-2">
+                <p className="text-xs font-medium text-muted-foreground">원문 느낌을 살린 버전</p>
+                <p className="text-sm text-blue-700 dark:text-blue-400 leading-relaxed font-medium">
+                  {result.literalVersion}
+                </p>
               </div>
             )}
 
-            {/* Reference */}
-            <div className="rounded-lg bg-secondary/40 px-4 py-3">
-              <p className="text-xs text-muted-foreground mb-1">목표 표현</p>
-              <p className="font-medium text-sm text-foreground">{current?.phrase}</p>
-              <p className="text-xs text-muted-foreground">{current?.meaning}</p>
+            {/* User's answer */}
+            <div className="rounded-lg bg-secondary/40 px-4 py-3 space-y-1">
+              <p className="text-xs text-muted-foreground">내 답변</p>
+              <p className="text-sm text-foreground leading-relaxed">{userAnswer}</p>
             </div>
 
-            {/* Next button */}
-            <button
-              onClick={handleNext}
-              className="w-full flex items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
-            >
-              {currentIndex + 1 >= queue.length ? "완료" : "다음 표현"}
-              <ChevronRight className="h-4 w-4" />
-            </button>
+            {/* Target phrase chip */}
+            <div className="flex items-center gap-2">
+              <span className="inline-flex items-center rounded-full border px-3 py-1 text-xs font-medium text-foreground">
+                {current?.phrase}
+              </span>
+              <span className="text-xs text-muted-foreground">{current?.meaning}</span>
+            </div>
+
+            {/* Action buttons */}
+            <div className="grid grid-cols-2 gap-3 pt-1">
+              <button
+                onClick={handleGraduateAndNext}
+                className="flex items-center justify-center gap-1.5 rounded-xl border border-primary/30 bg-primary/10 px-4 py-3 text-sm font-medium text-primary hover:bg-primary/20 transition-colors"
+              >
+                <Check className="h-4 w-4" />
+                충분해요
+              </button>
+              <button
+                onClick={handleNext}
+                className="flex items-center justify-center gap-1.5 rounded-xl bg-primary px-4 py-3 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
+              >
+                더 연습할게요
+                <ChevronRight className="h-4 w-4" />
+              </button>
+            </div>
           </motion.div>
         </AnimatePresence>
       </div>
@@ -412,7 +384,7 @@ export default function WritePracticePage() {
               {submitting ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  채점 중...
+                  평가 중...
                 </>
               ) : (
                 <>

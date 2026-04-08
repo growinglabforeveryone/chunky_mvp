@@ -1,9 +1,7 @@
 export interface WritingPracticeResult {
-  score: number; // 1-5
-  corrected: string;
-  feedback: string; // Korean
-  targetPhraseUsed: boolean;
-  keyIssues: string[]; // Korean
+  feedback: string;        // Korean
+  naturalVersion: string;  // 자연스럽게 다듬은 버전
+  literalVersion: string;  // 원문 느낌을 살린 버전
 }
 
 export interface WritingPracticeSession {

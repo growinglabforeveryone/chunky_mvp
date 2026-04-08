@@ -26,6 +26,7 @@ interface WritingStore {
     userAnswer: string;
     exampleKo: string;
   }) => Promise<WritingPracticeResult>;
+  graduateVocab: (vocabularyId: string) => Promise<void>;
   resetGraduation: (vocabularyId: string) => Promise<void>;
 }
 
@@ -147,30 +148,23 @@ export const useWritingStore = create<WritingStore>((set, get) => ({
       vocabulary_id: chunk.id,
       user_answer: userAnswer,
       reference_sentence: chunk.exampleSentence,
-      score: result.score,
+      score: 3, // neutral placeholder (NOT NULL constraint)
       feedback: {
-        corrected: result.corrected,
         feedback: result.feedback,
-        targetPhraseUsed: result.targetPhraseUsed,
-        keyIssues: result.keyIssues,
+        naturalVersion: result.naturalVersion,
+        literalVersion: result.literalVersion,
       },
     });
 
-    // Update vocabulary: last_writing_at, and writing_graduated if score >= 4
-    const vocabUpdate: Record<string, unknown> = { last_writing_at: new Date().toISOString() };
-    if (result.score >= 4) vocabUpdate.writing_graduated = true;
-
-    await supabase.from("vocabulary").update(vocabUpdate).eq("id", chunk.id);
+    // Update vocabulary: last_writing_at only (graduation is now manual)
+    const lastWritingAt = new Date().toISOString();
+    await supabase.from("vocabulary").update({ last_writing_at: lastWritingAt }).eq("id", chunk.id);
 
     // Update local chunk store
     useChunkStore.setState((s) => ({
       savedChunks: s.savedChunks.map((c) =>
         c.id === chunk.id
-          ? {
-              ...c,
-              lastWritingAt: vocabUpdate.last_writing_at as string,
-              writingGraduated: result.score >= 4 ? true : c.writingGraduated,
-            }
+          ? { ...c, lastWritingAt }
           : c
       ),
     }));
@@ -185,6 +179,19 @@ export const useWritingStore = create<WritingStore>((set, get) => ({
     await useLevelStore.getState().addXP(XP_REWARDS.WRITING_PRACTICE, "writing");
 
     return result;
+  },
+
+  graduateVocab: async (vocabularyId) => {
+    await supabase
+      .from("vocabulary")
+      .update({ writing_graduated: true })
+      .eq("id", vocabularyId);
+
+    useChunkStore.setState((s) => ({
+      savedChunks: s.savedChunks.map((c) =>
+        c.id === vocabularyId ? { ...c, writingGraduated: true } : c
+      ),
+    }));
   },
 
   resetGraduation: async (vocabularyId) => {

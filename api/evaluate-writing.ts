@@ -19,31 +19,25 @@ export default async function handler(req: Request): Promise<Response> {
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
     const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
 
-    const aiResult = await model.generateContent(`You are an encouraging English teacher evaluating a Korean learner's English translation.
+    const aiResult = await model.generateContent(`You are an encouraging English teacher helping a Korean learner improve their English writing.
 
 Target phrase: "${phrase}" (meaning: "${meaning}")
 Reference sentence: "${referenceSentence}"
 Learner's answer: "${userAnswer}"
 
-Scoring rubric:
-- 5: Target phrase used correctly + perfect grammar + natural expression
-- 4: Target phrase used correctly + at most 1 minor error (graduation threshold)
-- 3: Target phrase used but 2+ grammar errors or unnatural expression
-- 2: Target phrase misused or meaning distorted
-- 1: Target phrase not used or completely different meaning
+Your task:
+1. Write short encouraging feedback in Korean (1-2 sentences): mention one thing done well and one key improvement point if needed.
+2. Provide a "naturalVersion": the most fluent, natural English version of what the learner was trying to say.
+3. Provide a "literalVersion": a version that stays closer to the reference sentence style/structure.
 
-Common Korean learner issues to check: articles (a/an/the), prepositions, verb tense, subject-verb agreement.
+If the learner's answer is already excellent, naturalVersion and literalVersion can be identical or nearly identical.
 
 Return ONLY valid JSON (no markdown):
 {
-  "score": <1-5 integer>,
-  "corrected": "<best corrected version of the learner's sentence>",
   "feedback": "<encouraging feedback in Korean, 1-2 sentences>",
-  "targetPhraseUsed": <true|false>,
-  "keyIssues": ["<specific issue 1 in Korean>", "<specific issue 2 in Korean>"]
-}
-
-If the answer is perfect, keyIssues should be an empty array.`);
+  "naturalVersion": "<most natural/fluent English version>",
+  "literalVersion": "<version closer to reference sentence style>"
+}`);
 
     const jsonText = aiResult.response.text()
       .replace(/^```json\s*/i, "")
