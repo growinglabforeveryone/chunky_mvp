@@ -1,6 +1,12 @@
 import { createClient } from "@supabase/supabase-js";
 
-const FREE_MONTHLY_LIMIT = 20;
+// Per-endpoint free monthly limits
+const FREE_MONTHLY_LIMITS: Record<string, number> = {
+  extract: 20,
+  correct: 20,
+  evaluate: 30,
+};
+const DEFAULT_FREE_MONTHLY_LIMIT = 20;
 
 interface UsageCheckResult {
   allowed: boolean;
@@ -72,17 +78,19 @@ export async function checkUsage(
     .from("ai_usage")
     .select("*", { count: "exact", head: true })
     .eq("user_id", user.id)
+    .eq("endpoint", endpoint)
     .gte("created_at", monthStart);
 
   const used = count ?? 0;
+  const limit = FREE_MONTHLY_LIMITS[endpoint] ?? DEFAULT_FREE_MONTHLY_LIMIT;
 
-  if (used >= FREE_MONTHLY_LIMIT) {
+  if (used >= limit) {
     return {
       response: new Response(
         JSON.stringify({
           error: "monthly_limit",
           used,
-          limit: FREE_MONTHLY_LIMIT,
+          limit,
         }),
         { status: 402, headers: { "Content-Type": "application/json" } },
       ),
@@ -90,7 +98,7 @@ export async function checkUsage(
   }
 
   return {
-    result: { allowed: true, userId: user.id, tier, used, limit: FREE_MONTHLY_LIMIT },
+    result: { allowed: true, userId: user.id, tier, used, limit },
   };
 }
 

@@ -11,6 +11,7 @@ import SpeakPage from "@/pages/SpeakPage";
 import ReviewPage from "@/pages/ReviewPage";
 import ListenPage from "@/pages/ListenPage";
 import LibraryPage from "@/pages/LibraryPage";
+import WritePracticePage from "@/pages/WritePracticePage";
 import LandingPage from "@/pages/LandingPage";
 import NotFound from "@/pages/NotFound";
 import { useChunkStore } from "@/store/chunkStore";
@@ -67,6 +68,7 @@ function AppContent() {
         <Route path="/speak" element={<SpeakPage />} />
         <Route path="/listen" element={<ListenPage />} />
         <Route path="/review" element={<ReviewPage />} />
+        <Route path="/write" element={<WritePracticePage />} />
         <Route path="/library" element={<LibraryPage />} />
         <Route path="*" element={<NotFound />} />
       </Routes>

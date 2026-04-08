@@ -1,10 +1,11 @@
 import { useChunkStore } from "@/store/chunkStore";
+import { useWritingStore, WRITING_DAILY_LIMIT } from "@/store/writingStore";
 import { useUsageStore, FREE_AI_LIMIT, FREE_VOCAB_LIMIT } from "@/store/usageStore";
 import { useLevelStore, getSlimeForLevel, getXPForNextLevel, getCurrentLevelThreshold } from "@/store/levelStore";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Link } from "react-router-dom";
-import { BookOpen, Library, Layers, Trophy, CheckCircle2, Circle, Sparkles } from "lucide-react";
+import { BookOpen, Library, Layers, Trophy, CheckCircle2, Circle, Sparkles, PenLine } from "lucide-react";
 import { motion } from "framer-motion";
 import { useMemo, useState, useEffect } from "react";
 import ActivityHeatmap from "@/components/ActivityHeatmap";
@@ -56,6 +57,7 @@ export default function DashboardPage() {
   const { savedChunks, isLoadingSaved } = useChunkStore();
   const { tier, usedThisMonth, isLoaded: usageLoaded } = useUsageStore();
   const { totalXP, level, isLoaded: levelLoaded, lastLevelUp, clearLevelUp, backfillXP } = useLevelStore();
+  const { todayCount, getPracticeableChunks, loadTodayPractice } = useWritingStore();
   const dailySubcopy = MOTIVATIONAL_COPIES[new Date().getDate() % MOTIVATIONAL_COPIES.length];
 
   const [showOnboarding, setShowOnboarding] = useState(() => {
@@ -68,6 +70,11 @@ export default function DashboardPage() {
       backfillXP(savedChunks);
     }
   }, [levelLoaded, isLoadingSaved, savedChunks, totalXP, backfillXP]);
+
+  // 오늘 쓰기 연습 기록 로드
+  useEffect(() => {
+    if (!isLoadingSaved) loadTodayPractice();
+  }, [isLoadingSaved, loadTodayPractice]);
 
 
   const stats = useMemo(() => {
@@ -99,6 +106,9 @@ export default function DashboardPage() {
     const streak = getStreak(savedChunks);
     const reviewDoneToday = reviewedToday.length > 0 && dueToday.length === 0;
 
+    const writingAvailable = getPracticeableChunks(savedChunks).length;
+    const writingDoneToday = todayCount >= WRITING_DAILY_LIMIT;
+
     return {
       total: savedChunks.length,
       active: active.length,
@@ -108,10 +118,12 @@ export default function DashboardPage() {
       reviewDoneToday,
       addedToday: addedToday.length,
       streak,
-      studiedToday: reviewedToday.length > 0,
+      studiedToday: reviewedToday.length > 0 || todayCount > 0,
       masteredPercent: savedChunks.length > 0 ? Math.round((mastered.length / savedChunks.length) * 100) : 0,
+      writingAvailable,
+      writingDoneToday,
     };
-  }, [savedChunks]);
+  }, [savedChunks, todayCount, getPracticeableChunks]);
 
   if (isLoadingSaved) {
     return (
@@ -154,7 +166,7 @@ export default function DashboardPage() {
       </motion.div>
 
       {/* Chunky Level & Today Status */}
-      <div className="mb-6 grid grid-cols-2 gap-3">
+      <div className="mb-6 grid grid-cols-3 gap-3">
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}>
           {(() => {
             const slimeImg = getSlimeForLevel(level);
@@ -218,6 +230,35 @@ export default function DashboardPage() {
                   {stats.reviewDoneToday
                     ? `오늘 ${stats.reviewedToday}개 복습 완료`
                     : "탭해서 복습 시작 →"}
+                </p>
+              </CardContent>
+            </Card>
+          </Link>
+        </motion.div>
+
+        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}>
+          <Link to="/write" className="block">
+            <Card className={`border-none transition-opacity hover:opacity-80 ${stats.writingDoneToday ? "bg-gradient-to-br from-purple-50 to-fuchsia-50 dark:from-purple-950/30 dark:to-fuchsia-950/30" : "bg-gradient-to-br from-violet-50 to-purple-50 dark:from-violet-950/30 dark:to-purple-950/30"}`}>
+              <CardContent className="p-4 space-y-3">
+                <div className="flex items-center gap-2.5">
+                  <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${stats.writingDoneToday ? "bg-purple-500/10 text-purple-600" : "bg-violet-500/10 text-violet-600"}`}>
+                    {stats.writingDoneToday ? <CheckCircle2 className="h-5 w-5" /> : <PenLine className="h-5 w-5" />}
+                  </div>
+                  <div className="min-w-0">
+                    {stats.writingDoneToday ? (
+                      <p className="text-lg font-bold text-purple-600 whitespace-nowrap">완료 ✓</p>
+                    ) : (
+                      <p className="text-lg font-bold text-foreground whitespace-nowrap">{Math.min(stats.writingAvailable, 5 - todayCount)}개</p>
+                    )}
+                    <p className="text-xs text-muted-foreground whitespace-nowrap">
+                      {stats.writingDoneToday ? "오늘의 쓰기 끝!" : "쓰기 연습"}
+                    </p>
+                  </div>
+                </div>
+                <p className="text-[10px] font-medium text-muted-foreground">
+                  {stats.writingDoneToday
+                    ? `오늘 ${todayCount}개 연습 완료`
+                    : stats.writingAvailable > 0 ? "탭해서 연습 시작 →" : "연습할 표현이 없어요"}
                 </p>
               </CardContent>
             </Card>
@@ -315,7 +356,7 @@ export default function DashboardPage() {
 
       {/* Quick Actions */}
       <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}>
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-4 gap-3">
           <Link
             to="/extract"
             className="flex flex-col items-center gap-2 rounded-xl border bg-card p-4 text-center transition-colors hover:bg-secondary"
@@ -329,6 +370,13 @@ export default function DashboardPage() {
           >
             <BookOpen className="h-5 w-5 text-primary" />
             <span className="text-sm font-medium text-foreground">복습하기</span>
+          </Link>
+          <Link
+            to="/write"
+            className="flex flex-col items-center gap-2 rounded-xl border bg-card p-4 text-center transition-colors hover:bg-secondary"
+          >
+            <PenLine className="h-5 w-5 text-primary" />
+            <span className="text-sm font-medium text-foreground">쓰기 연습</span>
           </Link>
           <Link
             to="/library"

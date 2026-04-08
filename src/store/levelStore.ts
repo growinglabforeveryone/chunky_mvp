@@ -7,6 +7,7 @@ export const XP_REWARDS = {
   REVIEW: 10,
   MASTER: 50,
   WEEKLY_STREAK: 50,
+  WRITING_PRACTICE: 15,
 } as const;
 
 // 일일 복습 XP 상한
@@ -80,7 +81,7 @@ interface LevelStore {
   isLoaded: boolean;
   lastLevelUp: number | null; // 레벨업 시 새 레벨 번호
   loadXP: () => Promise<void>;
-  addXP: (amount: number, type: "save" | "review" | "master" | "streak") => Promise<number>;
+  addXP: (amount: number, type: "save" | "review" | "master" | "streak" | "writing") => Promise<number>;
   backfillXP: (chunks: { status?: string; reviewStage?: number }[]) => Promise<void>;
   clearLevelUp: () => void;
 }
@@ -110,8 +111,8 @@ export const useLevelStore = create<LevelStore>((set, get) => ({
   },
 
   addXP: async (amount, type) => {
-    // 복습인 경우 일일 상한 체크
-    if (type === "review") {
+    // 복습/쓰기인 경우 일일 상한 체크 (합산 200 XP)
+    if (type === "review" || type === "writing") {
       const cap = loadDailyCap();
       const remaining = DAILY_REVIEW_XP_CAP - cap.reviewXP;
       if (remaining <= 0) return 0;

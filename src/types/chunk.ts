@@ -15,6 +15,9 @@ export interface Chunk {
   nextReviewAt?: string;
   lastReviewedAt?: string;
   status?: ChunkStatus;
+  exampleKo?: string;
+  lastWritingAt?: string;
+  writingGraduated?: boolean;
   createdAt: string;
 }
 
