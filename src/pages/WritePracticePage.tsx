@@ -245,6 +245,12 @@ export default function WritePracticePage() {
               <span className="text-xs">+{XP_REWARDS.WRITING_PRACTICE} XP</span>
             </div>
 
+            {/* User's answer — first so user can compare */}
+            <div className="rounded-lg bg-secondary/40 px-4 py-3 space-y-1">
+              <p className="text-xs text-muted-foreground">내 답변</p>
+              <p className="text-sm text-foreground leading-relaxed">{userAnswer}</p>
+            </div>
+
             {/* Korean feedback */}
             <div className="rounded-xl border bg-card p-5">
               <p className="text-xs font-medium text-muted-foreground mb-2">핵심 피드백</p>
@@ -269,12 +275,6 @@ export default function WritePracticePage() {
               </div>
             )}
 
-            {/* User's answer */}
-            <div className="rounded-lg bg-secondary/40 px-4 py-3 space-y-1">
-              <p className="text-xs text-muted-foreground">내 답변</p>
-              <p className="text-sm text-foreground leading-relaxed">{userAnswer}</p>
-            </div>
-
             {/* Target phrase chip */}
             <div className="flex items-center gap-2">
               <span className="inline-flex items-center rounded-full border px-3 py-1 text-xs font-medium text-foreground">
@@ -290,13 +290,13 @@ export default function WritePracticePage() {
                 className="flex items-center justify-center gap-1.5 rounded-xl border border-primary/30 bg-primary/10 px-4 py-3 text-sm font-medium text-primary hover:bg-primary/20 transition-colors"
               >
                 <Check className="h-4 w-4" />
-                충분해요
+                이 표현 익혔어요
               </button>
               <button
                 onClick={handleNext}
                 className="flex items-center justify-center gap-1.5 rounded-xl bg-primary px-4 py-3 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
               >
-                더 연습할게요
+                나중에 다시 연습할게요
                 <ChevronRight className="h-4 w-4" />
               </button>
             </div>
