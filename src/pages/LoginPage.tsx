@@ -12,7 +12,7 @@ export default function LoginPage() {
     <div className="flex min-h-screen items-center justify-center bg-muted/30">
       <div className="text-center space-y-8">
         <div className="flex flex-col items-center">
-          <img src="/slimes/happy.svg" alt="Chunky 슬라임" className="h-24 w-24" />
+          <img src="/chunky/lv1.png" alt="Chunky" className="h-24 w-24 object-contain" />
           <div className="mt-1 h-2 w-10 rounded-full bg-foreground/5 blur-sm" />
           <h1
             className="mt-3 text-3xl text-foreground"

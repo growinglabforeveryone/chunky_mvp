@@ -62,6 +62,7 @@ function AppContent() {
   return (
     <>
       <AppNav />
+      <main className="pb-[60px] sm:pb-0">
       <Routes>
         <Route path="/" element={<DashboardPage />} />
         <Route path="/extract" element={<ExtractPage />} />
@@ -72,6 +73,7 @@ function AppContent() {
         <Route path="/library" element={<LibraryPage />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
+      </main>
     </>
   );
 }

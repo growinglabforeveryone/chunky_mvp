@@ -33,10 +33,9 @@ export default function OnboardingWelcome({
         <DialogHeader className="text-center">
           <div className="mx-auto mb-2 flex h-16 w-16 items-center justify-center">
             <img
-              src="/slimes/happy.svg"
-              alt="chunky slime"
-              className="h-14 w-14"
-              style={{ imageRendering: "pixelated" }}
+              src="/chunky/lv1.png"
+              alt="Chunky"
+              className="h-14 w-14 object-contain"
             />
           </div>
           <DialogTitle className="text-xl">Chunky에 오신 걸 환영해요!</DialogTitle>

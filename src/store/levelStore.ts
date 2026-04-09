@@ -16,13 +16,13 @@ const DAILY_REVIEW_XP_CAP = 200;
 // 레벨 임계값 (누적 XP)
 const LEVEL_THRESHOLDS = [0, 50, 200, 500, 1200, 2500, 5000, 10000, 18000, 30000];
 
-// 레벨에 따른 청키 슬라임 이미지
+// 레벨에 따른 청키 캐릭터 이미지
 export function getSlimeForLevel(level: number): string {
-  if (level <= 2) return "/slimes/basic.svg";
-  if (level <= 4) return "/slimes/glasses.svg";
-  if (level <= 6) return "/slimes/star.svg";
-  if (level <= 8) return "/slimes/crown.svg";
-  return "/slimes/unicorn.svg";
+  if (level <= 2) return "/chunky/lv1.png";
+  if (level <= 4) return "/chunky/lv2.png";
+  if (level <= 6) return "/chunky/great.png";
+  if (level <= 8) return "/chunky/crown.png";
+  return "/chunky/unicorn.png";
 }
 
 export function getLevelFromXP(xp: number): number {

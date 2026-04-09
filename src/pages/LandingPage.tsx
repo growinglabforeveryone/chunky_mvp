@@ -15,7 +15,7 @@ export default function LandingPage() {
       <header className="sticky top-0 z-50 border-b bg-background/80 backdrop-blur-sm">
         <div className="mx-auto flex h-14 max-w-5xl items-center justify-between px-4 sm:px-6">
           <div className="flex items-center gap-2">
-            <img src="/slimes/happy.svg" alt="Chunky" className="h-7 w-7" style={{ imageRendering: "pixelated" }} />
+            <img src="/chunky/lv1.png" alt="Chunky" className="h-7 w-7 object-contain" />
             <span className="text-lg text-foreground" style={{ fontFamily: "'Nunito', sans-serif", fontWeight: 800, letterSpacing: "-0.5px" }}>
               Chunky
             </span>
@@ -248,7 +248,7 @@ export default function LandingPage() {
                   <th className="p-4 text-center font-medium text-muted-foreground">타 단어장 앱</th>
                   <th className="p-4 text-center font-semibold text-primary">
                     <span className="flex items-center justify-center gap-1.5">
-                      <img src="/slimes/crown.svg" alt="" className="h-5 w-5" style={{ imageRendering: "pixelated" }} />
+                      <img src="/chunky/crown.png" alt="" className="h-5 w-5 object-contain" />
                       Chunky
                     </span>
                   </th>
@@ -278,10 +278,9 @@ export default function LandingPage() {
       <section className="bg-primary py-20">
         <div className="mx-auto max-w-2xl px-4 text-center sm:px-6">
           <img
-            src="/slimes/crown.svg"
+            src="/chunky/crown.png"
             alt="Chunky Crown"
-            className="mx-auto mb-4 h-16 w-16"
-            style={{ imageRendering: "pixelated" }}
+            className="mx-auto mb-4 h-16 w-16 object-contain"
           />
           <h2 className="text-3xl font-bold text-white sm:text-4xl">
             지금 읽은 이 문장도<br />단어뭉치가 될 수 있습니다
@@ -304,7 +303,7 @@ export default function LandingPage() {
         <div className="mx-auto max-w-5xl px-4 sm:px-6">
           <div className="flex flex-col items-center justify-between gap-4 sm:flex-row">
             <div className="flex items-center gap-2">
-              <img src="/slimes/happy.svg" alt="Chunky" className="h-5 w-5" style={{ imageRendering: "pixelated" }} />
+              <img src="/chunky/lv1.png" alt="Chunky" className="h-5 w-5 object-contain" />
               <span className="text-sm font-bold" style={{ fontFamily: "'Nunito', sans-serif" }}>Chunky</span>
             </div>
             <p className="text-xs text-muted-foreground">© 2026 Chunky. 영어 단어뭉치 학습 앱.</p>
@@ -420,10 +419,9 @@ function HeroMockup() {
         </div>
       </div>
       <img
-        src="/slimes/crown.svg"
+        src="/chunky/crown.png"
         alt=""
-        className="absolute -right-4 -top-4 h-14 w-14 drop-shadow-lg"
-        style={{ imageRendering: "pixelated" }}
+        className="absolute -right-4 -top-4 h-14 w-14 object-contain drop-shadow-lg"
       />
     </div>
   );
