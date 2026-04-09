@@ -18,9 +18,11 @@ const LEVEL_THRESHOLDS = [0, 50, 200, 500, 1200, 2500, 5000, 10000, 18000, 30000
 
 // 레벨에 따른 청키 캐릭터 이미지
 export function getSlimeForLevel(level: number): string {
+  if (level <= 1) return "/chunky/lv0.png";
   if (level <= 2) return "/chunky/lv1.png";
-  if (level <= 4) return "/chunky/lv2.png";
-  if (level <= 6) return "/chunky/great.png";
+  if (level <= 3) return "/chunky/lv2.png";
+  if (level <= 4) return "/chunky/lv3.png";
+  if (level <= 6) return "/chunky/flower.png";
   if (level <= 8) return "/chunky/crown.png";
   return "/chunky/unicorn.png";
 }
