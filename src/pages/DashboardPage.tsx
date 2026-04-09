@@ -175,7 +175,6 @@ export default function DashboardPage() {
           <Card className="border-none bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30">
             <CardContent className="p-5">
               <div className="flex items-center gap-4">
-                <img src="/chunky/great.png" alt="Chunky" className="h-14 w-14 shrink-0 object-contain" />
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
                     <CheckCircle2 className="h-4 w-4 text-green-600" />

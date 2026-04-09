@@ -245,7 +245,7 @@ export default function ReviewPage() {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
         <div className="flex flex-col items-center space-y-4 text-center">
-          <img src="/chunky/flower.png" alt="Chunky" className="w-16 h-16 object-contain" />
+          <img src="/chunky/great.png" alt="Chunky" className="w-16 h-16 object-contain" />
           <p className="font-serif text-2xl font-semibold text-foreground">오늘 할 건 다 했어요</p>
           <p className="text-sm text-muted-foreground leading-relaxed">
             {nextDue
