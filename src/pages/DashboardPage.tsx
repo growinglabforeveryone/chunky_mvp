@@ -290,7 +290,7 @@ export default function DashboardPage() {
         </Card>
       </motion.div>
 
-      {/* ── 4. 주간 활동 + 숙달 진행률 (통합 섹션) ── */}
+      {/* ── 4. 주간 활동 + 마스터 진행률 (통합 섹션) ── */}
       <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}>
         <Card className="mb-6">
           <CardContent className="p-5">
@@ -322,13 +322,13 @@ export default function DashboardPage() {
               <ActivityHeatmap chunks={savedChunks} />
             </div>
 
-            {/* 숙달 진행률 */}
+            {/* 마스터 진행률 */}
             {stats.total > 0 && (
               <div className="mt-5 border-t pt-4">
                 <div className="mb-2 flex items-center justify-between">
                   <div className="flex items-center gap-1.5">
                     <Trophy className="h-3.5 w-3.5 text-amber-500" />
-                    <span className="text-xs font-medium text-foreground">숙달 진행률</span>
+                    <span className="text-xs font-medium text-foreground">마스터 진행률</span>
                   </div>
                   <span className="text-xs font-semibold text-primary">{stats.mastered}/{stats.total}개</span>
                 </div>

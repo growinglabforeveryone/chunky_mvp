@@ -30,6 +30,7 @@ export default function SpeakPage() {
   const [speakChunks, setSpeakChunks] = useState<Chunk[]>([]);
   const [correcting, setCorrecting] = useState(false);
   const [extracting, setExtracting] = useState(false);
+  const [extractingAlt, setExtractingAlt] = useState(false);
   const [pendingMiniCards, setPendingMiniCards] = useState<{ id: string; phrase: string }[]>([]);
   const [schedulingTomorrow, setSchedulingTomorrow] = useState(false);
   const [hoveredChunkId, setHoveredChunkId] = useState<string | null>(null);
@@ -59,6 +60,28 @@ export default function SpeakPage() {
       setCorrecting(false);
     }
   }, [inputText, incrementUsage]);
+
+  // Step 2-alt: 대안 문장들에서 추출 (상태 A 또는 B에서 append)
+  const handleExtractAlternatives = useCallback(async () => {
+    if (!correction?.alternatives?.length) return;
+    setExtractingAlt(true);
+    try {
+      const combinedText = correction.alternatives.join("\n");
+      const extracted = await extractChunks(combinedText);
+      incrementUsage();
+      const enriched = extracted.map((c) => ({ ...c, sourceType: "text" as const }));
+      setSpeakChunks((prev) => [...prev, ...enriched]);
+      toast.success(`${enriched.length}개 단어뭉치를 추가했습니다`);
+    } catch (err) {
+      if (err instanceof MonthlyLimitError) {
+        setUpgradeModal({ reason: "ai_limit", used: err.used, limit: err.limit });
+        return;
+      }
+      toast.error("단어뭉치 추출에 실패했습니다");
+    } finally {
+      setExtractingAlt(false);
+    }
+  }, [correction, incrementUsage]);
 
   // Step 2: 추출 (상태 A → B)
   const handleExtract = useCallback(async () => {
@@ -258,6 +281,14 @@ export default function SpeakPage() {
                   </div>
                 ))}
               </div>
+              <button
+                onClick={!canUseAI() ? () => setUpgradeModal({ reason: "ai_limit", used: usedThisMonth, limit: FREE_AI_LIMIT }) : handleExtractAlternatives}
+                disabled={extractingAlt}
+                className="flex w-full items-center justify-center gap-2 rounded-lg border border-amber-300 bg-amber-50 px-4 py-2.5 text-sm font-medium text-amber-800 transition-colors hover:bg-amber-100 disabled:opacity-50 dark:border-amber-700 dark:bg-amber-950/30 dark:text-amber-300 dark:hover:bg-amber-950/50"
+              >
+                {extractingAlt ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                {extractingAlt ? "추출 중..." : "이 문장들에서도 청키 뽑기"}
+              </button>
             </div>
           )}
 
@@ -312,6 +343,27 @@ export default function SpeakPage() {
                   }}
                 />
               </div>
+
+              {correction.alternatives && correction.alternatives.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">이렇게도 말할 수 있어요</p>
+                  <div className="space-y-1.5">
+                    {correction.alternatives.map((alt, i) => (
+                      <div key={i} className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-2.5 font-serif text-sm leading-relaxed dark:border-amber-800 dark:bg-amber-950/30">
+                        {alt}
+                      </div>
+                    ))}
+                  </div>
+                  <button
+                    onClick={!canUseAI() ? () => setUpgradeModal({ reason: "ai_limit", used: usedThisMonth, limit: FREE_AI_LIMIT }) : handleExtractAlternatives}
+                    disabled={extractingAlt}
+                    className="flex w-full items-center justify-center gap-2 rounded-lg border border-amber-300 bg-amber-50 px-4 py-2.5 text-sm font-medium text-amber-800 transition-colors hover:bg-amber-100 disabled:opacity-50 dark:border-amber-700 dark:bg-amber-950/30 dark:text-amber-300 dark:hover:bg-amber-950/50"
+                  >
+                    {extractingAlt ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                    {extractingAlt ? "추출 중..." : "이 문장들에서도 청키 뽑기"}
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* 우측: 단어뭉치 카드 */}
