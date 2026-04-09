@@ -1,6 +1,5 @@
 import { useChunkStore } from "@/store/chunkStore";
 import { useWritingStore, WRITING_DAILY_LIMIT } from "@/store/writingStore";
-import { useUsageStore } from "@/store/usageStore";
 import { useLevelStore, getSlimeForLevel, getXPForNextLevel, getCurrentLevelThreshold } from "@/store/levelStore";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -54,7 +53,6 @@ function getStreak(chunks: { createdAt: string; status?: string; reviewStage?: n
 
 export default function DashboardPage() {
   const { savedChunks, isLoadingSaved } = useChunkStore();
-  const { tier, isLoaded: usageLoaded } = useUsageStore();
   const { totalXP, level, isLoaded: levelLoaded, backfillXP } = useLevelStore();
   const { todayCount, getPracticeableChunks, loadTodayPractice } = useWritingStore();
 
