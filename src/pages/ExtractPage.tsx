@@ -11,6 +11,58 @@ import { Plus, Sparkles, Save, Loader2, ChevronDown, X, MousePointerClick, Trash
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 
+const ONBOARDING_SAMPLE_CHUNKS = [
+  {
+    id: "onb-1",
+    phrase: "heads-up",
+    meaning: "미리 알림, 사전 공지",
+    exampleSentence: "Just a quick heads-up — the deadline has been moved up to Friday.",
+    exampleKo: "미리 알려드릴게요 — 마감일이 금요일로 앞당겨졌어요.",
+  },
+  {
+    id: "onb-2",
+    phrase: "move up",
+    meaning: "(일정을) 앞당기다",
+    exampleSentence: "The meeting has been moved up to 2 PM.",
+    exampleKo: "회의가 오후 2시로 앞당겨졌어요.",
+  },
+  {
+    id: "onb-3",
+    phrase: "wrap things up",
+    meaning: "마무리 짓다, 끝내다",
+    exampleSentence: "Let's try to wrap things up by end of day Thursday.",
+    exampleKo: "목요일 퇴근 전까지 마무리해봐요.",
+  },
+  {
+    id: "onb-4",
+    phrase: "reach out",
+    meaning: "연락하다, 도움을 요청하다",
+    exampleSentence: "Feel free to reach out if you have any questions.",
+    exampleKo: "질문 있으면 편하게 연락해요.",
+  },
+  {
+    id: "onb-5",
+    phrase: "need a hand",
+    meaning: "도움이 필요하다",
+    exampleSentence: "Let me know if you need a hand with anything.",
+    exampleKo: "뭐든 도움이 필요하면 말해줘요.",
+  },
+  {
+    id: "onb-6",
+    phrase: "key takeaways",
+    meaning: "핵심 내용, 주요 요점",
+    exampleSentence: "I'd like to go over the key takeaways from last week's meeting.",
+    exampleKo: "지난주 회의의 핵심 내용을 같이 정리해보려고요.",
+  },
+  {
+    id: "onb-7",
+    phrase: "stay on top of",
+    meaning: "(일을) 빠짐없이 잘 챙기다",
+    exampleSentence: "Thanks for staying on top of this!",
+    exampleKo: "잘 챙겨줘서 고마워요!",
+  },
+];
+
 // YouTube 자막 타임스탬프 제거
 // 포맷 1: "20:1820분 18초Text" (한국어 분+초)
 // 포맷 2: "0:00 Text" (줄 시작 mm:ss)
@@ -71,14 +123,19 @@ export default function ExtractPage() {
 
   // Accept sample text from onboarding navigation
   useEffect(() => {
-    const state = location.state as { sampleText?: string } | null;
+    const state = location.state as { sampleText?: string; isOnboarding?: boolean } | null;
     if (state?.sampleText) {
       setInputText(state.sampleText);
       setSourceName("이메일");
-      // Clear navigation state to prevent re-fill on back navigation
       window.history.replaceState({}, "");
+
+      if (state.isOnboarding) {
+        const now = new Date().toISOString();
+        setSourceText(state.sampleText);
+        setChunks(ONBOARDING_SAMPLE_CHUNKS.map((c) => ({ ...c, createdAt: now })));
+      }
     }
-  }, [location.state, setSourceName]);
+  }, [location.state, setSourceName, setSourceText, setChunks]);
 
   const handleExtract = useCallback(async () => {
     if (!inputText.trim()) return;

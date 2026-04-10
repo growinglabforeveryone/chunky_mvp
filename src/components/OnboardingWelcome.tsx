@@ -61,7 +61,7 @@ export default function OnboardingWelcome({
               localStorage.setItem(ONBOARDING_KEY, "true");
               onClose();
               navigate("/extract", {
-                state: { sampleText: ONBOARDING_SAMPLE_TEXT },
+                state: { sampleText: ONBOARDING_SAMPLE_TEXT, isOnboarding: true },
               });
             }}
             className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
