@@ -5,7 +5,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { Crown, Sparkles, BookOpen, Headphones } from "lucide-react";
+import { Crown, Sparkles, BookOpen } from "lucide-react";
 
 interface UpgradeModalProps {
   open: boolean;
@@ -44,10 +44,6 @@ export default function UpgradeModal({ open, onClose, reason, used, limit }: Upg
               <li className="flex items-center gap-2">
                 <BookOpen className="h-4 w-4 shrink-0 text-amber-500" />
                 단어장 무제한
-              </li>
-              <li className="flex items-center gap-2">
-                <Headphones className="h-4 w-4 shrink-0 text-amber-500" />
-                유튜브 자막 추출 (업데이트 예정)
               </li>
             </ul>
           </div>
