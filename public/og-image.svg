@@ -52,10 +52,4 @@
   <!-- Description -->
   <text x="600" y="492" font-family="Arial, sans-serif" font-size="30" fill="white" opacity="0.85" text-anchor="middle">영어 단어뭉치 학습 앱</text>
 
-  <!-- Feature pills -->
-  <rect x="340" y="528" width="220" height="48" rx="24" fill="#60C870" opacity="0.2"/>
-  <text x="450" y="559" font-family="Arial, sans-serif" font-size="22" fill="white" opacity="0.9" text-anchor="middle">📺 영상으로 학습</text>
-
-  <rect x="640" y="528" width="220" height="48" rx="24" fill="#60C870" opacity="0.2"/>
-  <text x="750" y="559" font-family="Arial, sans-serif" font-size="22" fill="white" opacity="0.9" text-anchor="middle">🧠 AI 청킹</text>
 </svg>
