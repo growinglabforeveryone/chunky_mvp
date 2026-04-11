@@ -15,7 +15,6 @@ export default function LandingPage() {
       <header className="sticky top-0 z-50 border-b bg-background/80 backdrop-blur-sm">
         <div className="mx-auto flex h-14 max-w-5xl items-center justify-between px-4 sm:px-6">
           <div className="flex items-center gap-2">
-            <img src="/chunky/lv1.png" alt="Chunky" className="h-7 w-7 object-contain" />
             <span className="text-lg text-foreground" style={{ fontFamily: "'Nunito', sans-serif", fontWeight: 800, letterSpacing: "-0.5px" }}>
               Chunky
             </span>
