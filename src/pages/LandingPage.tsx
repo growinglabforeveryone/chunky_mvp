@@ -20,12 +20,15 @@ export default function LandingPage() {
               Chunky
             </span>
           </div>
-          <button
-            onClick={handleGoogleLogin}
-            className="rounded-xl bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
-          >
-            무료로 시작하기
-          </button>
+          <div className="flex items-center gap-2">
+            <span className="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-700">베타</span>
+            <button
+              onClick={handleGoogleLogin}
+              className="rounded-xl bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+            >
+              베타 참여하기
+            </button>
+          </div>
         </div>
       </header>
 
@@ -34,6 +37,10 @@ export default function LandingPage() {
         <div className="flex flex-col items-center gap-10 lg:flex-row lg:gap-16">
           {/* Text */}
           <div className="flex-1 text-center lg:text-left">
+            <div className="mb-3 inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-3 py-1.5 text-xs font-semibold text-amber-700">
+              <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" />
+              베타 오픈 · 선착순 100명 · 3개월 무제한 체험
+            </div>
             <div className="mb-4 inline-flex items-center gap-2 rounded-full border bg-accent/50 px-3 py-1.5 text-xs font-medium text-accent-foreground">
               <Sparkles className="h-3.5 w-3.5" />
               Lexical Chunks + 에빙하우스 복습법
@@ -52,7 +59,7 @@ export default function LandingPage() {
                 className="flex w-full items-center justify-center gap-3 rounded-xl bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 sm:w-auto"
               >
                 <GoogleIcon />
-                Google로 무료 시작
+                Google로 베타 참여하기
               </button>
             </div>
           </div>
@@ -260,7 +267,7 @@ export default function LandingPage() {
                   ["단어뭉치 학습", "❌", "✅"],
                   ["AI 자동 추출", "❌", "✅"],
                   ["에빙하우스 복습", "일부 지원", "✅"],
-                  ["비용", "무료~유료", "무료 시작"],
+                  ["비용", "무료~유료", "베타 3개월 무제한"],
                 ].map(([feature, others, chunky]) => (
                   <tr key={feature} className="border-b last:border-0 hover:bg-muted/20">
                     <td className="p-4 font-medium">{feature}</td>
@@ -282,18 +289,22 @@ export default function LandingPage() {
             alt="Chunky Crown"
             className="mx-auto mb-4 h-16 w-16 object-contain"
           />
+          <div className="mb-4 inline-flex items-center gap-1.5 rounded-full bg-white/20 px-3 py-1.5 text-xs font-semibold text-white">
+            <span className="h-1.5 w-1.5 rounded-full bg-amber-300 animate-pulse" />
+            베타 오픈 · 선착순 100명
+          </div>
           <h2 className="text-3xl font-bold text-white sm:text-4xl">
             지금 읽은 이 문장도<br />단어뭉치가 될 수 있습니다
           </h2>
           <p className="mt-4 text-primary-foreground/80">
-            오늘 본 영어 콘텐츠부터 시작하세요.
+            베타 참여하면 3개월 무제한 체험 — 오늘 본 영어 콘텐츠부터 시작하세요.
           </p>
           <button
             onClick={handleGoogleLogin}
             className="mt-8 inline-flex items-center gap-3 rounded-xl bg-white px-8 py-3.5 text-sm font-semibold text-primary shadow-md transition-all hover:bg-white/90"
           >
             <GoogleIcon />
-            Google로 무료 시작
+            Google로 베타 참여하기
           </button>
         </div>
       </section>
