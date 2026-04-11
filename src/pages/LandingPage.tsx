@@ -39,7 +39,7 @@ export default function LandingPage() {
           <div className="flex-1 text-center lg:text-left">
             <div className="mb-3 inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-3 py-1.5 text-xs font-semibold text-amber-700">
               <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" />
-              베타 오픈 · 선착순 100명 · 3개월 무제한 체험
+              베타 오픈 · 3개월 무제한 체험
             </div>
             <div className="mb-4 inline-flex items-center gap-2 rounded-full border bg-accent/50 px-3 py-1.5 text-xs font-medium text-accent-foreground">
               <Sparkles className="h-3.5 w-3.5" />
@@ -117,8 +117,8 @@ export default function LandingPage() {
               </div>
               <h3 className="text-lg font-semibold">영어로 써보면, 교정과 추출을 한 번에</h3>
               <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-                영어 문장을 직접 써보면 AI가 교정해주고, 교정된 문장에서 단어뭉치까지 뽑아줍니다.
-                읽기만으로는 채울 수 없는 능동 표현력을 키울 수 있습니다.
+                영어 문장을 직접 써보면 AI가 교정해주고, 교정된 문장에서 단어뭉치를 바로 추출할 수 있습니다.
+                내가 틀렸던 표현에서 뽑은 청키라 기억에 더 오래 남습니다.
               </p>
             </div>
             <div className="w-full max-w-sm flex-shrink-0">
@@ -291,7 +291,7 @@ export default function LandingPage() {
           />
           <div className="mb-4 inline-flex items-center gap-1.5 rounded-full bg-white/20 px-3 py-1.5 text-xs font-semibold text-white">
             <span className="h-1.5 w-1.5 rounded-full bg-amber-300 animate-pulse" />
-            베타 오픈 · 선착순 100명
+            베타 오픈 중
           </div>
           <h2 className="text-3xl font-bold text-white sm:text-4xl">
             지금 읽은 이 문장도<br />단어뭉치가 될 수 있습니다
@@ -485,9 +485,16 @@ function SpeakMockup() {
       <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 text-[10px] leading-relaxed space-y-1.5">
         <span className="text-[9px] font-medium text-primary">AI 교정 →</span>
         <p className="text-foreground font-medium">"Apologies for the <span className="bg-green-100 text-green-800 rounded px-0.5">delayed response</span> — <span className="bg-green-100 text-green-800 rounded px-0.5">I've been swamped</span> lately."</p>
-        <div className="rounded bg-amber-50 border border-amber-200 px-2 py-1.5">
-          <p className="text-[8px] font-medium text-amber-700 mb-0.5">대안 표현</p>
-          <p className="text-[9px] text-amber-900">"Sorry for the radio silence — it's been a whirlwind week on my end."</p>
+      </div>
+      <div className="rounded-lg border border-dashed border-primary/40 bg-background p-2.5 space-y-1.5">
+        <p className="text-[9px] font-medium text-primary/70">교정 문장에서 바로 청키 추출 →</p>
+        <div className="flex items-center justify-between rounded bg-muted/60 px-2.5 py-1.5">
+          <span className="text-[10px] font-medium">delayed response</span>
+          <span className="text-[9px] text-primary font-medium">+저장</span>
+        </div>
+        <div className="flex items-center justify-between rounded bg-muted/60 px-2.5 py-1.5">
+          <span className="text-[10px] font-medium">I've been swamped</span>
+          <span className="text-[9px] text-primary font-medium">+저장</span>
         </div>
       </div>
     </div>
