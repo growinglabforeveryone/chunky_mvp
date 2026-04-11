@@ -63,7 +63,7 @@ export default function SpeakPage() {
 
   // Step 2-alt: 대안 문장들에서 추출 (상태 A 또는 B에서 append)
   const handleExtractAlternatives = useCallback(async () => {
-    if (!correction?.alternatives?.length) return;
+    if (!correction?.alternatives?.length || extractingAlt) return;
     setExtractingAlt(true);
     try {
       const combinedText = correction.alternatives.join("\n");
@@ -81,7 +81,7 @@ export default function SpeakPage() {
     } finally {
       setExtractingAlt(false);
     }
-  }, [correction, incrementUsage]);
+  }, [correction, extractingAlt, incrementUsage]);
 
   // Step 2: 추출 (상태 A → B)
   const handleExtract = useCallback(async () => {
@@ -271,27 +271,6 @@ export default function SpeakPage() {
             </div>
           )}
 
-          {correction.alternatives && correction.alternatives.length > 0 && (
-            <div className="space-y-2">
-              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">이렇게도 말할 수 있어요</p>
-              <div className="space-y-2">
-                {correction.alternatives.map((alt, i) => (
-                  <div key={i} className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 font-serif text-sm leading-relaxed dark:border-amber-800 dark:bg-amber-950/30">
-                    {alt}
-                  </div>
-                ))}
-              </div>
-              <button
-                onClick={!canUseAI() ? () => setUpgradeModal({ reason: "ai_limit", used: usedThisMonth, limit: FREE_AI_LIMIT }) : handleExtractAlternatives}
-                disabled={extractingAlt}
-                className="flex w-full items-center justify-center gap-2 rounded-lg border border-amber-300 bg-amber-50 px-4 py-2.5 text-sm font-medium text-amber-800 transition-colors hover:bg-amber-100 disabled:opacity-50 dark:border-amber-700 dark:bg-amber-950/30 dark:text-amber-300 dark:hover:bg-amber-950/50"
-              >
-                {extractingAlt ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-                {extractingAlt ? "추출 중..." : "이 문장들에서도 청키 뽑기"}
-              </button>
-            </div>
-          )}
-
           {/* 상태 A CTA */}
           <button
             onClick={!canUseAI() ? () => setUpgradeModal({ reason: "ai_limit", used: usedThisMonth, limit: FREE_AI_LIMIT }) : handleExtract}
@@ -301,6 +280,22 @@ export default function SpeakPage() {
             {extracting ? <Loader2 className="h-5 w-5 animate-spin" /> : <Sparkles className="h-5 w-5" />}
             {extracting ? "추출 중..." : "⚡ 단어뭉치 추출하기"}
           </button>
+
+          {correction.alternatives && correction.alternatives.length > 0 && (
+            <div className="space-y-2">
+              <div>
+                <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">이렇게도 말할 수 있어요</p>
+                <p className="text-[11px] text-muted-foreground/70">추출 후 여기서도 청키를 더 뽑을 수 있어요</p>
+              </div>
+              <div className="space-y-2">
+                {correction.alternatives.map((alt, i) => (
+                  <div key={i} className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 font-serif text-sm leading-relaxed dark:border-amber-800 dark:bg-amber-950/30">
+                    {alt}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </motion.div>
       )}
 
@@ -322,9 +317,9 @@ export default function SpeakPage() {
             </button>
           </div>
 
-          <div className="flex flex-col gap-6 md:flex-row">
-            {/* 좌측: 교정된 텍스트 */}
-            <div className="space-y-4 md:flex-[3]">
+          <div className="flex flex-col gap-6 md:grid md:grid-cols-5">
+            {/* 교정된 텍스트 (desktop: 좌상단) */}
+            <div className="space-y-4 md:col-span-3 md:row-start-1">
               <h3 className="text-sm font-medium text-muted-foreground">교정된 텍스트</h3>
               <div className="rounded-xl border bg-card p-4 shadow-sm sm:p-6" style={{ maxWidth: "65ch" }}>
                 <TextReader
@@ -343,31 +338,10 @@ export default function SpeakPage() {
                   }}
                 />
               </div>
-
-              {correction.alternatives && correction.alternatives.length > 0 && (
-                <div className="space-y-2">
-                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">이렇게도 말할 수 있어요</p>
-                  <div className="space-y-1.5">
-                    {correction.alternatives.map((alt, i) => (
-                      <div key={i} className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-2.5 font-serif text-sm leading-relaxed dark:border-amber-800 dark:bg-amber-950/30">
-                        {alt}
-                      </div>
-                    ))}
-                  </div>
-                  <button
-                    onClick={!canUseAI() ? () => setUpgradeModal({ reason: "ai_limit", used: usedThisMonth, limit: FREE_AI_LIMIT }) : handleExtractAlternatives}
-                    disabled={extractingAlt}
-                    className="flex w-full items-center justify-center gap-2 rounded-lg border border-amber-300 bg-amber-50 px-4 py-2.5 text-sm font-medium text-amber-800 transition-colors hover:bg-amber-100 disabled:opacity-50 dark:border-amber-700 dark:bg-amber-950/30 dark:text-amber-300 dark:hover:bg-amber-950/50"
-                  >
-                    {extractingAlt ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-                    {extractingAlt ? "추출 중..." : "이 문장들에서도 청키 뽑기"}
-                  </button>
-                </div>
-              )}
             </div>
 
-            {/* 우측: 단어뭉치 카드 */}
-            <div className="space-y-4 md:flex-[2]">
+            {/* 단어뭉치 카드 (desktop: 우측 전체 높이) */}
+            <div className="space-y-4 md:col-span-2 md:row-span-2 md:row-start-1">
               <div className="flex items-center justify-between">
                 <h3 className="text-sm font-medium text-muted-foreground">
                   추출된 표현 <span className="tabular-nums">({speakChunks.length})</span>
@@ -407,6 +381,28 @@ export default function SpeakPage() {
                 라이브러리에 저장
               </button>
             </div>
+
+            {/* 대안 표현 (desktop: 교정된 텍스트 아래, mobile: 청크 카드 아래) */}
+            {correction.alternatives && correction.alternatives.length > 0 && (
+              <div className="space-y-2 md:col-span-3 md:row-start-2">
+                <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">이렇게도 말할 수 있어요</p>
+                <div className="space-y-1.5">
+                  {correction.alternatives.map((alt, i) => (
+                    <div key={i} className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-2.5 font-serif text-sm leading-relaxed dark:border-amber-800 dark:bg-amber-950/30">
+                      {alt}
+                    </div>
+                  ))}
+                </div>
+                <button
+                  onClick={!canUseAI() ? () => setUpgradeModal({ reason: "ai_limit", used: usedThisMonth, limit: FREE_AI_LIMIT }) : handleExtractAlternatives}
+                  disabled={extractingAlt}
+                  className="flex w-full items-center justify-center gap-2 rounded-lg border border-amber-300 bg-amber-50 px-4 py-2.5 text-sm font-medium text-amber-800 transition-colors hover:bg-amber-100 disabled:opacity-50 dark:border-amber-700 dark:bg-amber-950/30 dark:text-amber-300 dark:hover:bg-amber-950/50"
+                >
+                  {extractingAlt ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                  {extractingAlt ? "추출 중..." : "대안 표현에서도 청키 더 뽑기"}
+                </button>
+              </div>
+            )}
           </div>
         </motion.div>
       )}
