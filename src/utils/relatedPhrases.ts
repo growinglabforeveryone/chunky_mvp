@@ -29,35 +29,68 @@ const STOP_WORDS = new Set([
   "keep", "keeps", "kept", "keeping", "let", "put", "set", "seem", "need",
   "up", "out", "off", "down", "away", "back",
   "one", "ones", "thing", "things", "way", "much", "many", "more", "most",
+  // 맥락에 따라 의미가 달라지는 고빈도 단어 — 단독으로 유사성 판단에 쓰기엔 너무 범용적
+  "first", "last", "next", "new", "old", "good", "great", "big", "long", "little",
+  "time", "times", "day", "days", "year", "years",
+  "right", "left", "well", "better", "best", "own", "same", "different",
+  "work", "works", "worked", "working", "say", "said", "says", "saying",
+  "know", "known", "knew", "knowing", "think", "thought", "thinking",
+  "look", "looked", "looking", "want", "wanted", "wanting",
+  "people", "person", "someone", "something", "anything", "nothing",
+  "like", "liked", "liking", "help", "helped", "helping",
 ]);
 
-function tokenize(phrase: string): string[] {
-  return phrase.toLowerCase().split(/\s+/).filter((w) => !STOP_WORDS.has(w));
+// 한국어 불용어 — 의미 매칭에서 제외
+const KO_STOP_WORDS = new Set([
+  "하다", "하는", "한", "했다", "해서", "하고", "하면", "하여", "되다", "된",
+  "이다", "있다", "없다", "것", "수", "때", "나", "가", "을", "를", "은", "는",
+  "이", "그", "저", "들", "도", "에", "의", "로", "으로", "와", "과", "또",
+  "더", "잘", "못", "안", "매우", "너무", "좀", "약간", "정말", "아주",
+]);
+
+function tokenizeEn(phrase: string): string[] {
+  return phrase.toLowerCase().split(/\s+/).filter((w) => !STOP_WORDS.has(w) && w.length > 1);
+}
+
+function tokenizeKo(meaning: string): string[] {
+  // 2자 이상 명사/동사 어근 추출 (조사·불용어 제외)
+  return meaning
+    .split(/[\s,·\-~()（）]+/)
+    .map((w) => w.replace(/[을를이가은는도에의로와과]/g, "").trim())
+    .filter((w) => w.length >= 2 && !KO_STOP_WORDS.has(w));
 }
 
 /**
  * 주어진 chunk와 유사한 표현을 savedChunks에서 찾아 반환.
- * 유사도 기준: 영어 phrase 핵심 단어(내용어) 공유 수
+ * 유사도 기준:
+ *   - 영어 내용어 공유 (가중치 1.0)
+ *   - 한국어 뜻 키워드 공유 (가중치 1.5 — 의미 유사성이 더 신뢰도 높음)
+ * 임계값: 복합 점수 >= 2.0 (단일 단어 매칭으로 통과 불가)
  */
 export function findRelatedPhrases(
   target: Chunk,
   allChunks: Chunk[],
   maxResults = 3
 ): Chunk[] {
-  const targetTokens = tokenize(target.phrase);
-  if (targetTokens.length === 0) return [];
+  const targetEnTokens = tokenizeEn(target.phrase);
+  const targetKoTokens = tokenizeKo(target.meaning);
+
+  if (targetEnTokens.length === 0 && targetKoTokens.length === 0) return [];
 
   return allChunks
     .filter((c) => c.id !== target.id && !c.mastered)
     .map((c) => {
-      const tokens = tokenize(c.phrase);
-      const shared = targetTokens.filter((t) => tokens.includes(t)).length;
-      const shorter = Math.min(targetTokens.length, tokens.length);
-      const ratio = shorter > 0 ? shared / shorter : 0;
-      return { chunk: c, score: shared, ratio };
+      const enTokens = tokenizeEn(c.phrase);
+      const koTokens = tokenizeKo(c.meaning);
+
+      const enShared = targetEnTokens.filter((t) => enTokens.includes(t)).length;
+      const koShared = targetKoTokens.filter((t) => koTokens.includes(t)).length;
+
+      const score = enShared * 1.0 + koShared * 1.5;
+      return { chunk: c, score, enShared, koShared };
     })
-    .filter(({ score, ratio }) => score >= 2 || (score >= 1 && ratio >= 0.5))
-    .sort((a, b) => b.score - a.score || b.ratio - a.ratio)
+    .filter(({ score }) => score >= 2.0)
+    .sort((a, b) => b.score - a.score)
     .slice(0, maxResults)
     .map(({ chunk }) => chunk);
 }

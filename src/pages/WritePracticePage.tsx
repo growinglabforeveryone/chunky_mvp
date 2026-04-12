@@ -292,6 +292,11 @@ export default function WritePracticePage() {
               <p className="text-sm text-green-700 dark:text-green-400 leading-relaxed font-medium">
                 {result.naturalVersion}
               </p>
+              {result.whyNatural && (
+                <p className="text-xs text-muted-foreground leading-relaxed pt-1 border-t border-border/50">
+                  {result.whyNatural}
+                </p>
+              )}
             </div>
 
             {/* Reference sentence — the stored original example */}
