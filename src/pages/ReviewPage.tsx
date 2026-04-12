@@ -3,7 +3,8 @@ import { useChunkStore } from "@/store/chunkStore";
 import { useLevelStore } from "@/store/levelStore";
 import { Chunk } from "@/types/chunk";
 import { motion, AnimatePresence } from "framer-motion";
-import { RotateCcw, Shuffle, X, Check, ChevronDown, MinusCircle, MessageCircle, Send } from "lucide-react";
+import { RotateCcw, Shuffle, X, Check, ChevronDown, MinusCircle, MessageCircle, Send, Volume2 } from "lucide-react";
+import { useTTS } from "@/hooks/useTTS";
 import { toast } from "sonner";
 import { findRelatedPhrases } from "@/utils/relatedPhrases";
 
@@ -21,6 +22,7 @@ function isDue(chunk: { reviewStage?: number; nextReviewAt?: string; mastered?: 
 }
 
 export default function ReviewPage() {
+  const { speak, playing } = useTTS();
   const { savedChunks, advanceChunk, resetChunk, excludeChunk } = useChunkStore();
   const { totalXP, level } = useLevelStore();
   const xpAtStart = useRef(totalXP);
@@ -354,13 +356,32 @@ export default function ReviewPage() {
 
           {/* Back */}
           <div className="backface-hidden rotate-y-180 [grid-area:1/1] flex flex-col items-center justify-center rounded-2xl border bg-card p-6 shadow-md">
-            <p className={`text-center text-xl sm:text-2xl font-semibold ${mode === "kr-to-en" ? "" : "font-serif"}`}>
-              {backContent}
-            </p>
+            <div className="flex items-center gap-2">
+              <p className={`text-center text-xl sm:text-2xl font-semibold ${mode === "kr-to-en" ? "" : "font-serif"}`}>
+                {backContent}
+              </p>
+              {mode === "kr-to-en" && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); speak(current.phrase); }}
+                  className={`shrink-0 rounded p-1 transition-colors ${playing === current.phrase ? "text-primary" : "text-muted-foreground/40 hover:text-muted-foreground"}`}
+                >
+                  <Volume2 className="h-4 w-4" />
+                </button>
+              )}
+            </div>
             <div className="mt-4 w-full rounded-lg bg-secondary/50 px-4 py-3">
               <p className="font-serif text-xs sm:text-sm leading-relaxed text-muted-foreground italic text-center">
                 "{current.exampleSentence}"
               </p>
+              <div className="mt-2 flex justify-center">
+                <button
+                  onClick={(e) => { e.stopPropagation(); speak(current.exampleSentence); }}
+                  className={`flex items-center gap-1 text-xs transition-colors ${playing === current.exampleSentence ? "text-primary" : "text-muted-foreground/40 hover:text-muted-foreground"}`}
+                >
+                  <Volume2 className="h-3 w-3" />
+                  예문 듣기
+                </button>
+              </div>
             </div>
 
             {/* 알았어요 / 몰랐어요 */}

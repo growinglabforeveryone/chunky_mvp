@@ -1,7 +1,8 @@
 import { Chunk } from "@/types/chunk";
-import { Pencil, Trash2, Check, X, ExternalLink } from "lucide-react";
+import { Pencil, Trash2, Check, X, ExternalLink, Volume2 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
+import { useTTS } from "@/hooks/useTTS";
 
 interface ChunkCardProps {
   chunk: Chunk;
@@ -20,6 +21,7 @@ export default function ChunkCard({
   isActive,
   onHover,
 }: ChunkCardProps) {
+  const { speak, playing } = useTTS();
   const [editing, setEditing] = useState(false);
   const [phrase, setPhrase] = useState(chunk.phrase);
   const [meaning, setMeaning] = useState(chunk.meaning);
@@ -97,7 +99,15 @@ export default function ChunkCard({
         <div className="space-y-2">
           <div className="flex items-start justify-between gap-2">
             <div>
-              <p className="font-medium text-foreground">{chunk.phrase}</p>
+              <div className="flex items-center gap-1.5">
+                <p className="font-medium text-foreground">{chunk.phrase}</p>
+                <button
+                  onClick={() => speak(chunk.phrase)}
+                  className={`rounded p-0.5 transition-colors ${playing === chunk.phrase ? "text-primary" : "text-muted-foreground/40 hover:text-muted-foreground"}`}
+                >
+                  <Volume2 className="h-3.5 w-3.5" />
+                </button>
+              </div>
               <p className="text-sm text-muted-foreground">{chunk.meaning}</p>
             </div>
             <div className="flex shrink-0 gap-1">
