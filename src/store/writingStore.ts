@@ -82,6 +82,32 @@ export const useWritingStore = create<WritingStore>((set, get) => ({
     // Return cached translation if available
     if (chunk.exampleKo) return chunk.exampleKo;
 
+    // Sibling 캐시 조회 — 같은 문장의 다른 청크에 이미 번역이 있으면 재사용
+    const { savedChunks } = useChunkStore.getState();
+    const siblingWithKo = savedChunks.find(
+      (c) => c.exampleSentence === chunk.exampleSentence && c.id !== chunk.id && c.exampleKo
+    );
+    if (siblingWithKo) {
+      const korean = siblingWithKo.exampleKo!;
+      const toPropagate = savedChunks.filter(
+        (c) => c.exampleSentence === chunk.exampleSentence && !c.exampleKo
+      );
+      for (const s of toPropagate) {
+        useChunkStore.getState().updateExampleKo(s.id, korean);
+      }
+      // DB에도 전파 (재시작 후 캐시 유지)
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        await supabase
+          .from("vocabulary")
+          .update({ example_ko: korean })
+          .eq("example_sentence", chunk.exampleSentence)
+          .eq("user_id", user.id)
+          .is("example_ko", null);
+      }
+      return korean;
+    }
+
     const { data: { session } } = await supabase.auth.getSession();
     const token = session?.access_token;
     if (!token) throw new Error("unauthorized");
@@ -93,10 +119,7 @@ export const useWritingStore = create<WritingStore>((set, get) => ({
         Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify({
-        vocabularyId: chunk.id,
         sentence: chunk.exampleSentence,
-        phrase: chunk.phrase,
-        meaning: chunk.meaning,
       }),
     });
 
@@ -104,8 +127,13 @@ export const useWritingStore = create<WritingStore>((set, get) => ({
     const data = await res.json();
     const korean = data.korean as string;
 
-    // Update local store cache
-    useChunkStore.getState().updateExampleKo(chunk.id, korean);
+    // 같은 exampleSentence 청크 전체에 로컬 캐시 전파
+    const allSiblings = useChunkStore.getState().savedChunks.filter(
+      (c) => c.exampleSentence === chunk.exampleSentence && !c.exampleKo
+    );
+    for (const s of allSiblings) {
+      useChunkStore.getState().updateExampleKo(s.id, korean);
+    }
     return korean;
   },
 

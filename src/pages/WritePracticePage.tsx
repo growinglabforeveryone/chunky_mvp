@@ -12,6 +12,30 @@ import { toast } from "sonner";
 
 type Phase = "start" | "practice" | "feedback" | "complete";
 
+/**
+ * 같은 exampleSentence를 가진 청크들이 연속으로 오지 않도록 round-robin 배치.
+ */
+function interleaveByExample(chunks: Chunk[]): Chunk[] {
+  const groups = new Map<string, Chunk[]>();
+  for (const c of chunks) {
+    if (!groups.has(c.exampleSentence)) groups.set(c.exampleSentence, []);
+    groups.get(c.exampleSentence)!.push(c);
+  }
+  if ([...groups.values()].every((g) => g.length === 1)) return chunks;
+
+  const queues = [...groups.values()];
+  const result: Chunk[] = [];
+  let idx = 0;
+  while (result.length < chunks.length) {
+    const remaining = queues.filter((q) => q.length > 0);
+    if (remaining.length === 0) break;
+    const q = remaining[idx % remaining.length];
+    result.push(q.shift()!);
+    idx++;
+  }
+  return result;
+}
+
 export default function WritePracticePage() {
   const { savedChunks } = useChunkStore();
   const {
@@ -55,9 +79,16 @@ export default function WritePracticePage() {
   const availableCount = Math.min(practiceableChunks.length, remainingToday);
   const current = queue[currentIndex];
 
+  const siblingHints = useMemo(() => {
+    if (!current) return [];
+    return savedChunks.filter(
+      (c) => c.exampleSentence === current.exampleSentence && c.id !== current.id && c.status === "active" && !c.writingGraduated
+    );
+  }, [savedChunks, current]);
+
   const handleStart = async () => {
     if (availableCount === 0) return;
-    const selected = [...practiceableChunks].slice(0, availableCount);
+    const selected = interleaveByExample([...practiceableChunks].slice(0, availableCount));
     setQueue(selected);
     setCurrentIndex(0);
     setSessionCount(0);
@@ -339,6 +370,16 @@ export default function WritePracticePage() {
               </div>
             </div>
 
+            {/* Sibling hints */}
+            {siblingHints.length > 0 && (
+              <div className="rounded-lg border border-dashed border-border px-4 py-3 space-y-1.5">
+                <p className="text-xs text-muted-foreground">이 문장의 다른 표현</p>
+                {siblingHints.map((s) => (
+                  <p key={s.id} className="text-xs text-muted-foreground/70">· {s.meaning}</p>
+                ))}
+              </div>
+            )}
+
             {/* Korean sentence to translate */}
             <div className="rounded-xl border bg-card p-5 space-y-2 min-h-[100px] flex flex-col justify-center">
               <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">이 문장을 영어로</p>
@@ -358,7 +399,8 @@ export default function WritePracticePage() {
                 value={userAnswer}
                 onChange={(e) => setUserAnswer(e.target.value)}
                 onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey && userAnswer.trim()) {
+                  // 데스크톱에서만 Enter 제출 (모바일 소프트 키보드는 줄바꿈으로 동작)
+                  if (e.key === "Enter" && !e.shiftKey && userAnswer.trim() && !("ontouchstart" in window)) {
                     e.preventDefault();
                     handleSubmit();
                   }
@@ -368,7 +410,7 @@ export default function WritePracticePage() {
                 disabled={loadingKo || submitting}
                 className="w-full resize-none rounded-xl border bg-background px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 disabled:opacity-50 transition"
               />
-              <p className="text-xs text-muted-foreground text-right">Enter로 제출, Shift+Enter로 줄바꿈</p>
+              <p className="text-xs text-muted-foreground text-right hidden sm:block">Enter로 제출, Shift+Enter로 줄바꿈</p>
             </div>
 
             {/* Submit */}

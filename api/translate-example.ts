@@ -33,7 +33,13 @@ export default async function handler(req: Request): Promise<Response> {
   }
 
   try {
-    const { vocabularyId, sentence, phrase, meaning } = await req.json();
+    const { vocabularyId, sentence } = await req.json();
+    if (!sentence || typeof sentence !== "string" || !sentence.trim()) {
+      return new Response(JSON.stringify({ error: "sentence is required" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
 
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
     const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
@@ -41,12 +47,12 @@ export default async function handler(req: Request): Promise<Response> {
     const aiResult = await model.generateContent(`You are a Korean English teacher. Translate the following English sentence into natural Korean.
 
 Context:
-- Target phrase: "${phrase}" (meaning: "${meaning}")
 - The learner will use this Korean sentence to practice writing the English version.
 
 Rules:
 - Translate naturally into Korean — not word-for-word
-- Keep the meaning precise so the target phrase "${phrase}" is clearly implied
+- Keep the meaning precise so a learner can reconstruct the original English sentence
+- Do NOT bias toward any specific English phrasing — translate the overall meaning
 - Return ONLY the Korean translation, no explanation, no punctuation change
 
 English sentence:
@@ -60,11 +66,13 @@ ${sentence}`);
       process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY!,
     );
 
+    // 같은 exampleSentence를 가진 모든 청크에 번역 전파 (아직 번역 없는 것만)
     await supabaseService
       .from("vocabulary")
       .update({ example_ko: korean })
-      .eq("id", vocabularyId)
-      .eq("user_id", user.id);
+      .eq("example_sentence", sentence)
+      .eq("user_id", user.id)
+      .is("example_ko", null);
 
     return new Response(JSON.stringify({ korean }), {
       headers: { "Content-Type": "application/json" },
