@@ -1,6 +1,30 @@
 import { useState, useCallback, useRef } from "react";
 
 const cache = new Map<string, string>(); // text → blob URL
+const preloading = new Set<string>(); // 중복 프리로드 방지
+
+async function preloadText(text: string) {
+  if (cache.has(text) || preloading.has(text)) return;
+  preloading.add(text);
+  try {
+    const res = await fetch("/api/tts", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text }),
+    });
+    if (!res.ok) return;
+    const blob = await res.blob();
+    cache.set(text, URL.createObjectURL(blob));
+  } catch {
+    // 프리로드 실패는 조용히 무시
+  } finally {
+    preloading.delete(text);
+  }
+}
+
+export function preloadTTS(...texts: string[]) {
+  texts.forEach(preloadText);
+}
 
 export function useTTS() {
   const [playing, setPlaying] = useState<string | null>(null);

@@ -23,6 +23,7 @@ export default function ChunkCard({
 }: ChunkCardProps) {
   const { speak, playing } = useTTS();
   const [editing, setEditing] = useState(false);
+
   const [phrase, setPhrase] = useState(chunk.phrase);
   const [meaning, setMeaning] = useState(chunk.meaning);
 

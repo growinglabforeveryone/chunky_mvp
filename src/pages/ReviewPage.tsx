@@ -3,8 +3,8 @@ import { useChunkStore } from "@/store/chunkStore";
 import { useLevelStore } from "@/store/levelStore";
 import { Chunk } from "@/types/chunk";
 import { motion, AnimatePresence } from "framer-motion";
-import { RotateCcw, Shuffle, X, Check, ChevronDown, MinusCircle, MessageCircle, Send, Volume2 } from "lucide-react";
-import { useTTS } from "@/hooks/useTTS";
+import { RotateCcw, X, Check, ChevronDown, MinusCircle, MessageCircle, Send, Volume2 } from "lucide-react";
+import { useTTS, preloadTTS } from "@/hooks/useTTS";
 import { toast } from "sonner";
 import { findRelatedPhrases } from "@/utils/relatedPhrases";
 
@@ -36,7 +36,6 @@ export default function ReviewPage() {
 
   const [isFlipped, setIsFlipped] = useState(false);
   const [mode, setMode] = useState<Mode>("kr-to-en");
-  const [shuffled, setShuffled] = useState(false);
   const [relatedOpen, setRelatedOpen] = useState(false);
   const [isComplete, setIsComplete] = useState(false);
 
@@ -66,16 +65,20 @@ export default function ReviewPage() {
     });
   }, [savedChunks, sessionRefTime]);
 
-  // Initialize session once when dueCards become available
+  // Initialize session once when dueCards become available — always shuffle
   useEffect(() => {
     if (!sessionInitialized && dueCards.length > 0) {
-      setSessionQueue([...dueCards]);
+      setSessionQueue([...dueCards].sort(() => Math.random() - 0.5));
       setSessionTotal(dueCards.length);
       setSessionInitialized(true);
     }
   }, [dueCards, sessionInitialized]);
 
   const current = sessionQueue[0];
+
+  useEffect(() => {
+    if (current) preloadTTS(current.phrase, current.exampleSentence);
+  }, [current?.id]);
 
   const related = useMemo(
     () => (current ? findRelatedPhrases(current, savedChunks) : []),
@@ -194,13 +197,6 @@ export default function ReviewPage() {
     setRelatedOpen(false);
   };
 
-  const handleShuffle = () => {
-    const next = !shuffled;
-    setShuffled(next);
-    if (next) {
-      setSessionQueue((prev) => [...prev].sort(() => Math.random() - 0.5));
-    }
-  };
 
   // ── Screens ──────────────────────────────────────────────
 
@@ -306,12 +302,6 @@ export default function ReviewPage() {
             <span className="tabular-nums font-medium text-foreground">{sessionQueue.length}</span>
             <span className="ml-1">개 남음</span>
           </span>
-          <button
-            onClick={handleShuffle}
-            className={`rounded-lg p-1.5 transition-colors ${shuffled ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-foreground"}`}
-          >
-            <Shuffle className="h-4 w-4" />
-          </button>
         </div>
       </div>
 

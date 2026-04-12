@@ -5,6 +5,7 @@ const FREE_MONTHLY_LIMITS: Record<string, number> = {
   extract: 20,
   correct: 20,
   evaluate: 30,
+  tts: 500,
 };
 const DEFAULT_FREE_MONTHLY_LIMIT = 20;
 

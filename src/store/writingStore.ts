@@ -180,7 +180,7 @@ export const useWritingStore = create<WritingStore>((set, get) => ({
       feedback: {
         feedback: result.feedback,
         naturalVersion: result.naturalVersion,
-        literalVersion: result.literalVersion,
+        whyNatural: result.whyNatural,
       },
     });
 
