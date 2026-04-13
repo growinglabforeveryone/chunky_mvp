@@ -317,7 +317,7 @@ export default function SpeakPage() {
             </button>
           </div>
 
-          <div className="flex flex-col gap-6 md:grid md:grid-cols-5">
+          <div className="flex flex-col gap-6 md:grid md:grid-cols-5 md:items-start">
             {/* 교정된 텍스트 (desktop: 좌상단) */}
             <div className="space-y-4 md:col-span-3 md:row-start-1">
               <h3 className="text-sm font-medium text-muted-foreground">교정된 텍스트</h3>
