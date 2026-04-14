@@ -39,12 +39,12 @@ STRICT RULES:
 For korean_meaning: translate ONLY the chunk, no extra words.
 
 For example_ko: provide a natural Korean translation of example_sentence.
-- Translate the meaning naturally — a Korean reader should feel it is native Korean
-- The translation MUST naturally include the chunk's usage (matching korean_meaning)
+- Wrap the Korean word(s) that correspond to the English phrase in [[ and ]]
+- Translate naturally — a Korean reader should feel it is native Korean
 - Match the register (formal/casual) of the English source
 - Do NOT leak English words (keep proper nouns/brands in English only)
-- Do NOT add bracketed explanations
-- Keep it one sentence with natural Korean punctuation
+- Do NOT add explanations or extra brackets
+- One sentence with natural Korean punctuation
 
 Return ONLY a valid JSON array (no markdown):
 [
@@ -52,7 +52,7 @@ Return ONLY a valid JSON array (no markdown):
     "word_phrase": "raise serious questions about",
     "korean_meaning": "~에 대해 심각한 의문을 제기하다",
     "example_sentence": "The scandal raised serious questions about corporate governance.",
-    "example_ko": "그 스캔들은 기업 거버넌스에 대해 심각한 의문을 제기했다."
+    "example_ko": "그 스캔들은 기업 거버넌스에 대해 [[심각한 의문을 제기했다]]."
   }
 ]
 

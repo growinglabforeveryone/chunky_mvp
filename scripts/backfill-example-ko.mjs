@@ -18,20 +18,23 @@ async function translate(sentence, phrase, meaning) {
   const result = await model.generateContent(`You are a Korean English teacher. Translate the following English sentence into natural Korean.
 
 Context:
-- The translation should naturally include the chunk's usage so a learner can map English ↔ Korean.
 - English chunk in the sentence: "${phrase}" (Korean meaning: ${meaning})
 
 Rules:
 - Translate naturally, not word-for-word
+- Wrap the Korean word(s) that correspond to the English chunk in [[ and ]]
 - Match the register (formal/casual) of the source
 - Do NOT leak English words (keep proper nouns/brands in English)
-- Do NOT add explanations or brackets
+- Do NOT add explanations or extra brackets
 - One sentence with natural Korean punctuation
+
+Example: if chunk is "raise serious questions about", output:
+"그 스캔들은 기업 거버넌스에 대해 [[심각한 의문을 제기했다]]."
 
 English sentence:
 ${sentence}
 
-Return ONLY the Korean translation.`);
+Return ONLY the Korean translation with [[ ]] markers.`);
   return result.response.text().trim();
 }
 
@@ -40,7 +43,6 @@ async function main() {
   const { data, error } = await supabase
     .from("vocabulary")
     .select("id, phrase, meaning, example_sentence")
-    .is("example_ko", null)
     .not("example_sentence", "is", null);
 
   if (error) {
@@ -71,8 +73,7 @@ async function main() {
       const { error: updateErr } = await supabase
         .from("vocabulary")
         .update({ example_ko: korean })
-        .eq("example_sentence", sentence)
-        .is("example_ko", null);
+        .eq("example_sentence", sentence);
 
       if (updateErr) {
         console.error(`[${i}/${uniqueByExample.size}] FAIL update: ${row.phrase}`, updateErr);

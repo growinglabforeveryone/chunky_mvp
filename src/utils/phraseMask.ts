@@ -1,3 +1,16 @@
+/**
+ * example_ko에 포함된 [[...]] 마커를 파싱.
+ * 반환: { clean: 마커 제거된 텍스트, start, end } — 마커 없으면 null
+ */
+export function parseKoHighlight(text: string): { clean: string; start: number; end: number } | null {
+  const match = text.match(/\[\[(.+?)\]\]/);
+  if (!match) return null;
+  const start = text.indexOf("[[");
+  const highlightText = match[1];
+  const clean = text.replace(/\[\[(.+?)\]\]/, "$1");
+  return { clean, start, end: start + highlightText.length };
+}
+
 function escapeRegex(str: string): string {
   return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }

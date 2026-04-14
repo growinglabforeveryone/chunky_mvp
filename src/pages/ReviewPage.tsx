@@ -8,7 +8,7 @@ import { useTTS, preloadTTS } from "@/hooks/useTTS";
 import { toast } from "sonner";
 import { findRelatedPhrases } from "@/utils/relatedPhrases";
 import HighlightedText from "@/components/HighlightedText";
-import { maskPhraseInSentence } from "@/utils/phraseMask";
+import { maskPhraseInSentence, parseKoHighlight } from "@/utils/phraseMask";
 
 type Mode = "kr-to-en" | "en-to-kr";
 
@@ -282,6 +282,10 @@ export default function ReviewPage() {
       : null;
   const showClozeFront = mode === "kr-to-en" && !!current.exampleKo && !!maskedSentence;
 
+  // 한국어 예문 마커 파싱 [[...]] → 강조 범위 추출
+  const koHighlight = current.exampleKo ? parseKoHighlight(current.exampleKo) : null;
+  const koDisplayText = koHighlight ? koHighlight.clean : (current.exampleKo ?? "");
+
   return (
     <div className="mx-auto max-w-xl px-6 py-10">
       {/* 헤더 */}
@@ -305,20 +309,10 @@ export default function ReviewPage() {
           </button>
         </div>
 
-        <div className="flex items-center gap-2">
-          {isRetry && (
-            <span className="rounded-full bg-amber-50 border border-amber-200 px-2 py-0.5 text-xs text-amber-700">
-              다시
-            </span>
-          )}
-          <span className="rounded-full bg-secondary px-2.5 py-0.5 text-xs text-muted-foreground">
-            {STAGE_LABELS[current.reviewStage ?? 0]}
-          </span>
-          <span className="text-sm text-muted-foreground">
-            <span className="tabular-nums font-semibold text-foreground">{sessionTotal - sessionQueue.length + 1}</span>
-            <span className="text-muted-foreground/60"> / {sessionTotal}</span>
-          </span>
-        </div>
+        <span className="text-sm text-muted-foreground">
+          <span className="tabular-nums font-semibold text-foreground">{sessionTotal - sessionQueue.length + 1}</span>
+          <span className="text-muted-foreground/60"> / {sessionTotal}</span>
+        </span>
       </div>
 
       {/* 플래시카드 */}
@@ -333,15 +327,29 @@ export default function ReviewPage() {
           className="preserve-3d grid"
         >
           {/* Front — grid 스태킹으로 Back과 같은 셀 공유 */}
-          <div className="backface-hidden [grid-area:1/1] flex flex-col items-center justify-center rounded-2xl border bg-card px-6 pt-8 pb-5 shadow-md min-h-[240px] gap-4">
+          <div className="backface-hidden [grid-area:1/1] relative flex flex-col items-center justify-center rounded-2xl border bg-card px-6 pt-8 pb-5 shadow-md min-h-[240px] gap-4">
+            {/* 카드 속성 뱃지 — 우상단 */}
+            <div className="absolute top-3 right-4 flex items-center gap-1.5">
+              {isRetry && (
+                <span className="rounded-full bg-amber-50 border border-amber-200 px-2 py-0.5 text-xs text-amber-700">다시</span>
+              )}
+              <span className="rounded-full bg-secondary px-2 py-0.5 text-xs text-muted-foreground/70">
+                {STAGE_LABELS[current.reviewStage ?? 0]}
+              </span>
+            </div>
+
             {showClozeFront ? (
               <>
                 {/* 보조: 한국어 예문 (phrase 강조) — 작게 위에 */}
-                <HighlightedText
-                  text={current.exampleKo!}
-                  highlight={current.meaning}
-                  className="text-center text-sm leading-relaxed text-muted-foreground"
-                />
+                <span className="text-center text-sm leading-relaxed text-muted-foreground">
+                  {koHighlight ? (
+                    <>
+                      {koDisplayText.slice(0, koHighlight.start)}
+                      <span className="text-primary font-semibold">{koDisplayText.slice(koHighlight.start, koHighlight.end)}</span>
+                      {koDisplayText.slice(koHighlight.end)}
+                    </>
+                  ) : koDisplayText}
+                </span>
                 {/* 메인: 영어 빈칸 예문 — 크고 진하게 */}
                 <p className="text-center text-lg sm:text-xl font-semibold text-foreground leading-relaxed">
                   {maskedSentence}
