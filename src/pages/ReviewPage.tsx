@@ -305,32 +305,20 @@ export default function ReviewPage() {
           </button>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
+          {isRetry && (
+            <span className="rounded-full bg-amber-50 border border-amber-200 px-2 py-0.5 text-xs text-amber-700">
+              다시
+            </span>
+          )}
+          <span className="rounded-full bg-secondary px-2.5 py-0.5 text-xs text-muted-foreground">
+            {STAGE_LABELS[current.reviewStage ?? 0]}
+          </span>
           <span className="text-sm text-muted-foreground">
-            <span className="tabular-nums font-medium text-foreground">{sessionQueue.length}</span>
-            <span className="ml-1">개 남음</span>
+            <span className="tabular-nums font-semibold text-foreground">{sessionTotal - sessionQueue.length + 1}</span>
+            <span className="text-muted-foreground/60"> / {sessionTotal}</span>
           </span>
         </div>
-      </div>
-
-      {/* 단계 + 재시도 표시 */}
-      <div className="mb-4 flex items-center gap-2">
-        {[0, 1, 2, 3].map((s) => (
-          <div
-            key={s}
-            className={`h-1 flex-1 rounded-full transition-colors ${
-              s < (current.reviewStage ?? 0) ? "bg-primary" : s === (current.reviewStage ?? 0) ? "bg-primary/40" : "bg-border"
-            }`}
-          />
-        ))}
-        <span className="ml-1 text-xs text-muted-foreground">
-          {STAGE_LABELS[current.reviewStage ?? 0]}
-        </span>
-        {isRetry && (
-          <span className="rounded-full bg-amber-50 border border-amber-200 px-2 py-0.5 text-xs text-amber-700">
-            다시
-          </span>
-        )}
       </div>
 
       {/* 플래시카드 */}
@@ -345,28 +333,26 @@ export default function ReviewPage() {
           className="preserve-3d grid"
         >
           {/* Front — grid 스태킹으로 Back과 같은 셀 공유 */}
-          <div className="backface-hidden [grid-area:1/1] flex flex-col items-center justify-center rounded-2xl border bg-card p-6 shadow-md min-h-[220px]">
+          <div className="backface-hidden [grid-area:1/1] flex flex-col items-center justify-center rounded-2xl border bg-card px-6 pt-8 pb-5 shadow-md min-h-[240px] gap-4">
             {showClozeFront ? (
-              <div className="flex flex-col items-center gap-3 w-full">
-                {/* 한국어 예문 (phrase 부분 강조) */}
+              <>
+                {/* 보조: 한국어 예문 (phrase 강조) — 작게 위에 */}
                 <HighlightedText
                   text={current.exampleKo!}
                   highlight={current.meaning}
-                  className="font-serif text-center text-lg sm:text-xl leading-relaxed text-foreground"
+                  className="text-center text-sm leading-relaxed text-muted-foreground"
                 />
-                {/* 영어 빈칸 예문 */}
-                <p className="text-center text-sm sm:text-base italic text-muted-foreground leading-relaxed">
+                {/* 메인: 영어 빈칸 예문 — 크고 진하게 */}
+                <p className="text-center text-lg sm:text-xl font-semibold text-foreground leading-relaxed">
                   {maskedSentence}
                 </p>
-                {/* 보조: 한국어 뜻 */}
-                <p className="text-xs text-muted-foreground/60">{current.meaning}</p>
-              </div>
+              </>
             ) : (
               <p className={`text-center text-xl sm:text-2xl font-semibold ${mode === "en-to-kr" ? "" : "font-serif"}`}>
                 {mode === "kr-to-en" ? current.meaning : current.phrase}
               </p>
             )}
-            <p className="mt-6 text-xs text-muted-foreground/60">클릭 또는 Space</p>
+            <p className="text-xs text-muted-foreground/40">클릭 또는 Space</p>
           </div>
 
           {/* Back */}
