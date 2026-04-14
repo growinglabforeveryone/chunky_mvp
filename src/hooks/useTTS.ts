@@ -1,7 +1,17 @@
 import { useState, useCallback, useRef } from "react";
+import { supabase } from "@/lib/supabaseClient";
 
 const cache = new Map<string, string>(); // text → blob URL
 const preloading = new Set<string>(); // 중복 프리로드 방지
+
+async function getAuthHeaders(): Promise<Record<string, string>> {
+  const { data: { session } } = await supabase.auth.getSession();
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  if (session?.access_token) {
+    headers["Authorization"] = `Bearer ${session.access_token}`;
+  }
+  return headers;
+}
 
 async function preloadText(text: string) {
   if (cache.has(text) || preloading.has(text)) return;
@@ -9,7 +19,7 @@ async function preloadText(text: string) {
   try {
     const res = await fetch("/api/tts", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: await getAuthHeaders(),
       body: JSON.stringify({ text }),
     });
     if (!res.ok) return;
@@ -45,7 +55,7 @@ export function useTTS() {
       if (!url) {
         const res = await fetch("/api/tts", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: await getAuthHeaders(),
           body: JSON.stringify({ text }),
         });
         if (!res.ok) throw new Error("TTS 실패");

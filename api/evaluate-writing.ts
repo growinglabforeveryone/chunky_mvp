@@ -34,7 +34,7 @@ Before writing output, silently evaluate:
 
 Now write each field using these rules:
 
-"feedback" (Korean, 2-3 sentences):
+"feedback" (MUST be written in Korean — 2-3 sentences, no English sentences):
 - Open with the most critical error (spelling → grammar → word choice, in that order). Name the exact wrong word/phrase and what's correct.
 - Then give an honest overall read: was the structure sound? Was the target phrase used well?
 - If there are no errors, acknowledge what worked and name one subtle thing to level up.
