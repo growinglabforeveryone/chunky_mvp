@@ -7,7 +7,7 @@ interface RawChunk {
   word_phrase: string;
   korean_meaning: string;
   example_sentence: string;
-  reuse_example: string;
+  example_ko: string;
 }
 
 const PROMPT = (text: string) => `You are an expert English vocabulary chunk extractor for Korean business professionals.
@@ -38,13 +38,21 @@ STRICT RULES:
 
 For korean_meaning: translate ONLY the chunk, no extra words.
 
+For example_ko: provide a natural Korean translation of example_sentence.
+- Translate the meaning naturally — a Korean reader should feel it is native Korean
+- The translation MUST naturally include the chunk's usage (matching korean_meaning)
+- Match the register (formal/casual) of the English source
+- Do NOT leak English words (keep proper nouns/brands in English only)
+- Do NOT add bracketed explanations
+- Keep it one sentence with natural Korean punctuation
+
 Return ONLY a valid JSON array (no markdown):
 [
   {
     "word_phrase": "raise serious questions about",
     "korean_meaning": "~에 대해 심각한 의문을 제기하다",
-    "example_sentence": "The exact sentence from the text where this chunk appears.",
-    "reuse_example": "The scandal raised serious questions about corporate governance."
+    "example_sentence": "The scandal raised serious questions about corporate governance.",
+    "example_ko": "그 스캔들은 기업 거버넌스에 대해 심각한 의문을 제기했다."
   }
 ]
 
@@ -141,7 +149,7 @@ export default async function handler(req: Request): Promise<Response> {
         phrase: item.word_phrase,
         meaning: item.korean_meaning,
         exampleSentence: item.example_sentence,
-        reuseExample: item.reuse_example,
+        exampleKo: item.example_ko?.trim() || undefined,
         sourceText: text.slice(0, 300),
         createdAt: new Date().toISOString(),
       }));

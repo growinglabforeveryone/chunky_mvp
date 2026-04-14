@@ -98,7 +98,7 @@ export const useChunkStore = create<ChunkStore>((set, get) => ({
       phrase: c.phrase,
       meaning: c.meaning,
       example_sentence: c.exampleSentence,
-      reuse_example: c.reuseExample ?? null,
+      example_ko: c.exampleKo ?? null,
       source_text: c.sourceText ?? null,
       source_name: sourceName || null,
       created_at: c.createdAt,
