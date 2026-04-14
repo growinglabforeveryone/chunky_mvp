@@ -7,6 +7,8 @@ import { RotateCcw, X, Check, ChevronDown, MinusCircle, MessageCircle, Send, Vol
 import { useTTS, preloadTTS } from "@/hooks/useTTS";
 import { toast } from "sonner";
 import { findRelatedPhrases } from "@/utils/relatedPhrases";
+import HighlightedText from "@/components/HighlightedText";
+import { maskPhraseInSentence } from "@/utils/phraseMask";
 
 type Mode = "kr-to-en" | "en-to-kr";
 
@@ -271,8 +273,14 @@ export default function ReviewPage() {
   if (!current) return null;
 
   const isRetry = failedIds.has(current.id);
-  const frontContent = mode === "kr-to-en" ? current.meaning : current.phrase;
   const backContent = mode === "kr-to-en" ? current.phrase : current.meaning;
+
+  // 한→영 앞면: 빈칸 예문 생성 (실패 시 null → fallback)
+  const maskedSentence =
+    mode === "kr-to-en" && current.exampleSentence && current.phrase
+      ? maskPhraseInSentence(current.exampleSentence, current.phrase)
+      : null;
+  const showClozeFront = mode === "kr-to-en" && !!current.exampleKo && !!maskedSentence;
 
   return (
     <div className="mx-auto max-w-xl px-6 py-10">
@@ -338,9 +346,26 @@ export default function ReviewPage() {
         >
           {/* Front — grid 스태킹으로 Back과 같은 셀 공유 */}
           <div className="backface-hidden [grid-area:1/1] flex flex-col items-center justify-center rounded-2xl border bg-card p-6 shadow-md min-h-[220px]">
-            <p className={`text-center text-xl sm:text-2xl font-semibold ${mode === "en-to-kr" ? "" : "font-serif"}`}>
-              {frontContent}
-            </p>
+            {showClozeFront ? (
+              <div className="flex flex-col items-center gap-3 w-full">
+                {/* 한국어 예문 (phrase 부분 강조) */}
+                <HighlightedText
+                  text={current.exampleKo!}
+                  highlight={current.meaning}
+                  className="font-serif text-center text-lg sm:text-xl leading-relaxed text-foreground"
+                />
+                {/* 영어 빈칸 예문 */}
+                <p className="text-center text-sm sm:text-base italic text-muted-foreground leading-relaxed">
+                  {maskedSentence}
+                </p>
+                {/* 보조: 한국어 뜻 */}
+                <p className="text-xs text-muted-foreground/60">{current.meaning}</p>
+              </div>
+            ) : (
+              <p className={`text-center text-xl sm:text-2xl font-semibold ${mode === "en-to-kr" ? "" : "font-serif"}`}>
+                {mode === "kr-to-en" ? current.meaning : current.phrase}
+              </p>
+            )}
             <p className="mt-6 text-xs text-muted-foreground/60">클릭 또는 Space</p>
           </div>
 
