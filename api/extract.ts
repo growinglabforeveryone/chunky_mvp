@@ -38,9 +38,22 @@ STRICT RULES:
 
 For korean_meaning: translate ONLY the chunk, no extra words.
 
-For example_sentence: copy the EXACT sentence from the text above that contains the chunk. Do NOT paraphrase or invent a new sentence.
+For example_sentence: find the sentence in the text that contains the chunk, then trim it by removing noise that does NOT affect understanding of the chunk:
+- Appositive phrases naming specific people/places (e.g., ", John Coogan and Jordi Hays,")
+- Parenthetical asides unrelated to the chunk (e.g., ", which airs online three hours a day, five days a week,")
+- Relative clauses that only add background detail irrelevant to the chunk
+KEEP: the chunk verbatim, the subject, main verb, and any context needed to understand how the chunk is used.
+Do NOT invent or paraphrase — only remove noise from the original. Aim for a natural, complete sentence. No strict word limit; advanced sentences can stay longer if the context is needed.
 
-For example_ko: provide a natural Korean translation of example_sentence.
+Trimming examples:
+- ORIGINAL: "They have embraced the 'TBPN' hosts, John Coogan and Jordi Hays, who often speak optimistically about technology on their show, which airs online three hours a day, five days a week."
+  TRIMMED:  "They have embraced the 'TBPN' hosts who often speak optimistically about technology."
+- ORIGINAL: "The deal was a marketing move by OpenAI, which, along with the rest of the A.I. industry, has faced intensifying criticism over the transformation that the technology could bring."
+  TRIMMED:  "OpenAI, along with the rest of the A.I. industry, has faced intensifying criticism over the transformation that the technology could bring."
+- ORIGINAL: "Sarah Chen, the firm's chief economist since 2019, warned that rising interest rates could slow growth."
+  TRIMMED:  "Sarah Chen warned that rising interest rates could slow growth."
+
+For example_ko: provide a natural Korean translation of the TRIMMED example_sentence.
 - Wrap the Korean word(s) that correspond to the English phrase in [[ and ]]
 - Translate naturally — a Korean reader should feel it is native Korean
 - Match the register (formal/casual) of the English source
@@ -53,7 +66,7 @@ Return ONLY a valid JSON array (no markdown):
   {
     "word_phrase": "raise serious questions about",
     "korean_meaning": "~에 대해 심각한 의문을 제기하다",
-    "example_sentence": "[exact sentence from the text containing this chunk]",
+    "example_sentence": "The scandal raised serious questions about corporate governance.",
     "example_ko": "그 스캔들은 기업 거버넌스에 대해 [[심각한 의문을 제기했다]]."
   }
 ]
@@ -134,14 +147,35 @@ async function extractFallback(model: GenerativeModel, text: string): Promise<Ra
 
 /**
  * 원문에서 phrase가 포함된 실제 문장을 찾아 반환.
- * Gemini가 임의 예문을 생성한 경우 덮어쓰기용 안전망.
+ * 마침표 뒤에 공백+대문자가 오는 경우만 문장 끝으로 인식 → "A.I." 같은 약어 오분리 방지.
  */
 function findSourceSentence(text: string, phrase: string): string | null {
-  // 문장 단위로 분리 (.  !  ? 기준, 단 약어 대응 위해 대문자 이후만)
-  const sentences = text.match(/[^.!?]*[.!?]+/g) ?? [text];
+  const sentences = text.split(/(?<=[.!?])\s+(?=[A-Z"'])/).map((s) => s.trim()).filter(Boolean);
   const lower = phrase.toLowerCase();
   const found = sentences.find((s) => s.toLowerCase().includes(lower));
-  return found ? found.trim() : null;
+  return found ?? null;
+}
+
+/**
+ * Gemini가 트리밍한 예문에 chunk가 여전히 포함되어 있는지 검증.
+ * 실패 시 원문 문장으로 fallback하고 example_ko는 undefined 처리.
+ */
+function validateAndFallback(
+  item: RawChunk,
+  sourceText: string
+): { exampleSentence: string; exampleKo: string | undefined } {
+  const phrase = item.word_phrase.toLowerCase();
+  const trimmed = item.example_sentence?.trim() ?? "";
+
+  // 트리밍된 예문에 chunk가 남아있으면 그대로 사용
+  if (trimmed && trimmed.toLowerCase().includes(phrase)) {
+    return { exampleSentence: trimmed, exampleKo: item.example_ko?.trim() || undefined };
+  }
+
+  // chunk 누락 → 원문 전체 문장으로 fallback, ko는 무효화
+  console.warn(`[extract] chunk lost after trimming: "${item.word_phrase}" — falling back to source sentence`);
+  const source = findSourceSentence(sourceText, item.word_phrase);
+  return { exampleSentence: source ?? trimmed, exampleKo: undefined };
 }
 
 /** 중복 청크 제거: phrase가 이미 있는 다른 phrase의 부분 문자열이면 제거 */
@@ -204,15 +238,13 @@ export default async function handler(req: Request): Promise<Response> {
       })
       .slice(0, 12)
       .map((item) => {
-        // Gemini가 임의 예문을 생성한 경우 원문 문장으로 덮어쓰기
-        const sourceSentence = findSourceSentence(text, item.word_phrase);
-        const exampleSentence = sourceSentence ?? item.example_sentence;
+        const { exampleSentence, exampleKo } = validateAndFallback(item, text);
         return {
           id: crypto.randomUUID(),
           phrase: item.word_phrase,
           meaning: item.korean_meaning,
           exampleSentence,
-          exampleKo: item.example_ko?.trim() || undefined,
+          exampleKo,
           sourceText: text.slice(0, 300),
           createdAt: new Date().toISOString(),
         };
