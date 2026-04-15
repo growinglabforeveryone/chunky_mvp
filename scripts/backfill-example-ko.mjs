@@ -1,5 +1,5 @@
 /**
- * example_ko가 비어있는 vocabulary 카드에 한국어 예문 번역 일괄 생성
+ * vocabulary 카드마다 example_ko를 개별 생성 (sibling 전파 없음)
  * 실행: node --env-file=.env.local scripts/backfill-example-ko.mjs
  */
 
@@ -39,7 +39,7 @@ Return ONLY the Korean translation with [[ ]] markers.`);
 }
 
 async function main() {
-  console.log("Fetching cards with example_ko = NULL...");
+  console.log("Fetching all cards...");
   const { data, error } = await supabase
     .from("vocabulary")
     .select("id, phrase, meaning, example_sentence")
@@ -50,44 +50,33 @@ async function main() {
     process.exit(1);
   }
 
-  console.log(`Found ${data.length} cards to backfill.`);
+  console.log(`Found ${data.length} cards to backfill (per-chunk, no sibling propagation).`);
   if (data.length === 0) return;
-
-  // 같은 example_sentence는 한 번만 번역 → 모든 sibling에 전파
-  const uniqueByExample = new Map();
-  for (const row of data) {
-    if (!uniqueByExample.has(row.example_sentence)) {
-      uniqueByExample.set(row.example_sentence, row);
-    }
-  }
-  console.log(`Unique example sentences: ${uniqueByExample.size}`);
 
   let success = 0;
   let failed = 0;
-  let i = 0;
 
-  for (const [sentence, row] of uniqueByExample) {
-    i++;
+  for (let i = 0; i < data.length; i++) {
+    const row = data[i];
     try {
-      const korean = await translate(sentence, row.phrase, row.meaning);
+      const korean = await translate(row.example_sentence, row.phrase, row.meaning);
       const { error: updateErr } = await supabase
         .from("vocabulary")
         .update({ example_ko: korean })
-        .eq("example_sentence", sentence);
+        .eq("id", row.id);  // 개별 row만 업데이트
 
       if (updateErr) {
-        console.error(`[${i}/${uniqueByExample.size}] FAIL update: ${row.phrase}`, updateErr);
+        console.error(`[${i + 1}/${data.length}] FAIL update: ${row.phrase}`, updateErr);
         failed++;
       } else {
-        console.log(`[${i}/${uniqueByExample.size}] ✓ "${row.phrase}" → ${korean.slice(0, 50)}...`);
+        console.log(`[${i + 1}/${data.length}] ✓ "${row.phrase}" → ${korean.slice(0, 60)}...`);
         success++;
       }
     } catch (err) {
-      console.error(`[${i}/${uniqueByExample.size}] FAIL translate: ${row.phrase}`, err.message);
+      console.error(`[${i + 1}/${data.length}] FAIL translate: ${row.phrase}`, err.message);
       failed++;
     }
 
-    // rate limit 완화
     await new Promise((r) => setTimeout(r, 200));
   }
 

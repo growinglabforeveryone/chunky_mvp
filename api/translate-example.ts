@@ -66,13 +66,11 @@ ${sentence}`);
       process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY!,
     );
 
-    // 같은 exampleSentence를 가진 모든 청크에 번역 전파 (아직 번역 없는 것만)
+    // 해당 카드만 업데이트 (sibling 전파 없음 — chunk마다 마커 위치가 다름)
     await supabaseService
       .from("vocabulary")
       .update({ example_ko: korean })
-      .eq("example_sentence", sentence)
-      .eq("user_id", user.id)
-      .is("example_ko", null);
+      .eq("id", vocabularyId);
 
     return new Response(JSON.stringify({ korean }), {
       headers: { "Content-Type": "application/json" },
