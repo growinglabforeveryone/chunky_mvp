@@ -61,20 +61,24 @@ Return ONLY a valid JSON array (no markdown):
 Text to analyze:
 ${text}`;
 
-/** 텍스트를 문장 경계 기준으로 N개 구간에 균등 분배 */
-function sampleSegments(text: string, segmentChars: number, count: number): string[] {
+/** 텍스트를 문장 경계 기준으로 앞에서부터 연속으로 분할 (빈틈 없음) */
+function splitSegments(text: string, segmentChars: number, maxSegments: number): string[] {
   if (text.length <= segmentChars) return [text];
 
-  const step = Math.floor(text.length / count);
   const segments: string[] = [];
+  let pos = 0;
 
-  for (let i = 0; i < count; i++) {
-    const start = i * step;
-    let end = start + segmentChars;
-    // 문장 끝(. ! ?)에서 자르기
-    const boundary = text.slice(end, end + 200).search(/[.!?]/);
-    if (boundary !== -1) end = end + boundary + 1;
-    segments.push(text.slice(start, Math.min(end, text.length)));
+  while (pos < text.length && segments.length < maxSegments) {
+    let end = pos + segmentChars;
+    if (end < text.length) {
+      // 문장 끝(. ! ?)에서 자르기
+      const boundary = text.slice(end, end + 200).search(/[.!?]/);
+      if (boundary !== -1) end = end + boundary + 1;
+    } else {
+      end = text.length;
+    }
+    segments.push(text.slice(pos, end));
+    pos = end;
   }
 
   return segments;
@@ -171,10 +175,10 @@ export default async function handler(req: Request): Promise<Response> {
       generationConfig: { thinkingConfig: { thinkingBudget: 0 } } as never,
     });
 
-    // 1200자씩 최대 4구간 균등 분배 → 병렬 추출
-    const SEGMENT_CHARS = 1200;
-    const MAX_SEGMENTS = 4;
-    const segments = sampleSegments(text, SEGMENT_CHARS, Math.min(MAX_SEGMENTS, Math.ceil(text.length / SEGMENT_CHARS)));
+    // 1500자씩 최대 8구간 연속 분할 → 병렬 추출 (기사 전체 커버)
+    const SEGMENT_CHARS = 1500;
+    const MAX_SEGMENTS = 8;
+    const segments = splitSegments(text, SEGMENT_CHARS, MAX_SEGMENTS);
 
     const t0 = Date.now();
     let rawArrays = await Promise.all(segments.map((seg) => extractFromSegment(model, seg)));
