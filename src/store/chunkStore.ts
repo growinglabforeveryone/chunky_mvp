@@ -72,7 +72,25 @@ export const useChunkStore = create<ChunkStore>((set, get) => ({
   removeChunk: (id) =>
     set((s) => ({ chunks: s.chunks.filter((c) => c.id !== id) })),
 
-  addChunk: (chunk) => set((s) => ({ chunks: [...s.chunks, chunk] })),
+  addChunk: (chunk) =>
+    set((s) => {
+      const sourceText = s.sourceText.toLowerCase();
+      const newPos = chunk.phrase ? sourceText.indexOf(chunk.phrase.toLowerCase()) : -1;
+
+      // 원문에서 위치를 찾을 수 없으면 맨 뒤에 추가
+      if (newPos === -1) return { chunks: [...s.chunks, chunk] };
+
+      const insertIdx = s.chunks.findIndex((c) => {
+        const pos = c.phrase ? sourceText.indexOf(c.phrase.toLowerCase()) : -1;
+        return pos === -1 || pos > newPos;
+      });
+
+      if (insertIdx === -1) return { chunks: [...s.chunks, chunk] };
+
+      const next = [...s.chunks];
+      next.splice(insertIdx, 0, chunk);
+      return { chunks: next };
+    }),
 
   commitChunks: async () => {
     const { chunks, savedChunks, sourceName } = get();
