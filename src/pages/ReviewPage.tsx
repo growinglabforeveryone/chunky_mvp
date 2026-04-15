@@ -7,10 +7,7 @@ import { RotateCcw, X, Check, ChevronDown, MinusCircle, MessageCircle, Send, Vol
 import { useTTS, preloadTTS } from "@/hooks/useTTS";
 import { toast } from "sonner";
 import { findRelatedPhrases } from "@/utils/relatedPhrases";
-import HighlightedText from "@/components/HighlightedText";
 import { maskPhraseInSentence, parseKoHighlight } from "@/utils/phraseMask";
-
-type Mode = "kr-to-en" | "en-to-kr";
 
 const STAGE_LABELS = ["신규", "1일", "7일", "30일", "완료"];
 const NEXT_REVIEW_LABELS = ["", "1일 뒤", "7일 뒤", "30일 뒤"];
@@ -37,7 +34,6 @@ export default function ReviewPage() {
   const [sessionTotal, setSessionTotal] = useState(0);
 
   const [isFlipped, setIsFlipped] = useState(false);
-  const [mode, setMode] = useState<Mode>("kr-to-en");
   const [relatedOpen, setRelatedOpen] = useState(false);
   const [isComplete, setIsComplete] = useState(false);
 
@@ -273,14 +269,12 @@ export default function ReviewPage() {
   if (!current) return null;
 
   const isRetry = failedIds.has(current.id);
-  const backContent = mode === "kr-to-en" ? current.phrase : current.meaning;
 
-  // 한→영 앞면: 빈칸 예문 생성 (실패 시 null → fallback)
-  const maskedSentence =
-    mode === "kr-to-en" && current.exampleSentence && current.phrase
-      ? maskPhraseInSentence(current.exampleSentence, current.phrase)
-      : null;
-  const showClozeFront = mode === "kr-to-en" && !!current.exampleKo && !!maskedSentence;
+  // 앞면: 빈칸 예문 생성 (실패 시 null → fallback)
+  const maskedSentence = current.exampleSentence && current.phrase
+    ? maskPhraseInSentence(current.exampleSentence, current.phrase)
+    : null;
+  const showClozeFront = !!current.exampleKo && !!maskedSentence;
 
   // 한국어 예문 마커 파싱 [[...]] → 강조 범위 추출
   const koHighlight = current.exampleKo ? parseKoHighlight(current.exampleKo) : null;
@@ -289,26 +283,7 @@ export default function ReviewPage() {
   return (
     <div className="mx-auto max-w-xl px-6 py-10">
       {/* 헤더 */}
-      <div className="mb-6 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => setMode("kr-to-en")}
-            className={`rounded-lg px-3 py-1.5 text-sm transition-colors ${
-              mode === "kr-to-en" ? "bg-primary/10 text-primary font-medium" : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            한→영
-          </button>
-          <button
-            onClick={() => setMode("en-to-kr")}
-            className={`rounded-lg px-3 py-1.5 text-sm transition-colors ${
-              mode === "en-to-kr" ? "bg-primary/10 text-primary font-medium" : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            영→한
-          </button>
-        </div>
-
+      <div className="mb-6 flex items-center justify-end">
         <span className="text-sm text-muted-foreground">
           <span className="tabular-nums font-semibold text-foreground">{sessionTotal - sessionQueue.length + 1}</span>
           <span className="text-muted-foreground/60"> / {sessionTotal}</span>
@@ -356,8 +331,8 @@ export default function ReviewPage() {
                 </p>
               </>
             ) : (
-              <p className={`text-center text-xl sm:text-2xl font-semibold ${mode === "en-to-kr" ? "" : "font-serif"}`}>
-                {mode === "kr-to-en" ? current.meaning : current.phrase}
+              <p className="text-center text-xl sm:text-2xl font-semibold font-serif">
+                {current.meaning}
               </p>
             )}
             <p className="text-xs text-muted-foreground/40">클릭 또는 Space</p>
@@ -366,17 +341,15 @@ export default function ReviewPage() {
           {/* Back */}
           <div className="backface-hidden rotate-y-180 [grid-area:1/1] flex flex-col items-center justify-center rounded-2xl border bg-card p-6 shadow-md">
             <div className="flex items-center gap-2">
-              <p className={`text-center text-xl sm:text-2xl font-semibold ${mode === "kr-to-en" ? "" : "font-serif"}`}>
-                {backContent}
+              <p className="text-center text-xl sm:text-2xl font-semibold">
+                {current.phrase}
               </p>
-              {mode === "kr-to-en" && (
-                <button
-                  onClick={(e) => { e.stopPropagation(); speak(current.phrase); }}
-                  className={`shrink-0 rounded p-1 transition-colors ${playing === current.phrase ? "text-primary" : "text-muted-foreground/40 hover:text-muted-foreground"}`}
-                >
-                  <Volume2 className="h-4 w-4" />
-                </button>
-              )}
+              <button
+                onClick={(e) => { e.stopPropagation(); speak(current.phrase); }}
+                className={`shrink-0 rounded p-1 transition-colors ${playing === current.phrase ? "text-primary" : "text-muted-foreground/40 hover:text-muted-foreground"}`}
+              >
+                <Volume2 className="h-4 w-4" />
+              </button>
             </div>
             <div className="mt-4 w-full rounded-lg bg-secondary/50 px-4 py-3">
               <p className="font-serif text-xs sm:text-sm leading-relaxed text-muted-foreground italic text-center">
