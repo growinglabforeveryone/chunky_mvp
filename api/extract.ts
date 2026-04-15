@@ -38,6 +38,8 @@ STRICT RULES:
 
 For korean_meaning: translate ONLY the chunk, no extra words.
 
+For example_sentence: copy the EXACT sentence from the text above that contains the chunk. Do NOT paraphrase or invent a new sentence.
+
 For example_ko: provide a natural Korean translation of example_sentence.
 - Wrap the Korean word(s) that correspond to the English phrase in [[ and ]]
 - Translate naturally — a Korean reader should feel it is native Korean
@@ -51,7 +53,7 @@ Return ONLY a valid JSON array (no markdown):
   {
     "word_phrase": "raise serious questions about",
     "korean_meaning": "~에 대해 심각한 의문을 제기하다",
-    "example_sentence": "The scandal raised serious questions about corporate governance.",
+    "example_sentence": "[exact sentence from the text containing this chunk]",
     "example_ko": "그 스캔들은 기업 거버넌스에 대해 [[심각한 의문을 제기했다]]."
   }
 ]
@@ -90,6 +92,18 @@ async function extractFromSegment(model: GenerativeModel, segment: string): Prom
   } catch {
     return [];
   }
+}
+
+/**
+ * 원문에서 phrase가 포함된 실제 문장을 찾아 반환.
+ * Gemini가 임의 예문을 생성한 경우 덮어쓰기용 안전망.
+ */
+function findSourceSentence(text: string, phrase: string): string | null {
+  // 문장 단위로 분리 (.  !  ? 기준, 단 약어 대응 위해 대문자 이후만)
+  const sentences = text.match(/[^.!?]*[.!?]+/g) ?? [text];
+  const lower = phrase.toLowerCase();
+  const found = sentences.find((s) => s.toLowerCase().includes(lower));
+  return found ? found.trim() : null;
 }
 
 /** 중복 청크 제거: phrase가 이미 있는 다른 phrase의 부분 문자열이면 제거 */
@@ -144,15 +158,20 @@ export default async function handler(req: Request): Promise<Response> {
         return posA - posB;
       })
       .slice(0, 12)
-      .map((item) => ({
-        id: crypto.randomUUID(),
-        phrase: item.word_phrase,
-        meaning: item.korean_meaning,
-        exampleSentence: item.example_sentence,
-        exampleKo: item.example_ko?.trim() || undefined,
-        sourceText: text.slice(0, 300),
-        createdAt: new Date().toISOString(),
-      }));
+      .map((item) => {
+        // Gemini가 임의 예문을 생성한 경우 원문 문장으로 덮어쓰기
+        const sourceSentence = findSourceSentence(text, item.word_phrase);
+        const exampleSentence = sourceSentence ?? item.example_sentence;
+        return {
+          id: crypto.randomUUID(),
+          phrase: item.word_phrase,
+          meaning: item.korean_meaning,
+          exampleSentence,
+          exampleKo: item.example_ko?.trim() || undefined,
+          sourceText: text.slice(0, 300),
+          createdAt: new Date().toISOString(),
+        };
+      });
 
     if (chunks.length > 0) {
       await recordUsage(userId, "extract");
