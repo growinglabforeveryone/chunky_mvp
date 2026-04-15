@@ -94,6 +94,40 @@ async function extractFromSegment(model: GenerativeModel, segment: string): Prom
   }
 }
 
+const FALLBACK_PROMPT = (text: string) => `You are an English vocabulary extractor for Korean learners.
+
+Extract 1~3 useful word chunks from the text. Be lenient — include collocations, idioms, or multi-word expressions that a Korean learner would benefit from memorizing, even if they seem relatively simple.
+
+RULES:
+1. VERBATIM only — exact words as they appear in the text
+2. NO single words, NO full sentences
+3. At least 2 words per chunk
+4. NO article (a/an/the) at the END
+
+For korean_meaning: translate ONLY the chunk, no extra words.
+For example_sentence: copy the EXACT sentence from the text that contains the chunk.
+For example_ko: natural Korean translation of example_sentence with [[markers]] around the phrase equivalent.
+
+Return ONLY a valid JSON array (no markdown):
+[{"word_phrase":"...","korean_meaning":"...","example_sentence":"...","example_ko":"...[[highlighted]]..."}]
+
+Text:
+${text}`;
+
+async function extractFallback(model: GenerativeModel, text: string): Promise<RawChunk[]> {
+  try {
+    const result = await model.generateContent(FALLBACK_PROMPT(text));
+    const jsonText = result.response.text()
+      .replace(/^```json\s*/i, "")
+      .replace(/^```\s*/i, "")
+      .replace(/```\s*$/i, "")
+      .trim();
+    return JSON.parse(jsonText) as RawChunk[];
+  } catch {
+    return [];
+  }
+}
+
 /**
  * 원문에서 phrase가 포함된 실제 문장을 찾아 반환.
  * Gemini가 임의 예문을 생성한 경우 덮어쓰기용 안전망.
@@ -143,9 +177,16 @@ export default async function handler(req: Request): Promise<Response> {
     const segments = sampleSegments(text, SEGMENT_CHARS, Math.min(MAX_SEGMENTS, Math.ceil(text.length / SEGMENT_CHARS)));
 
     const t0 = Date.now();
-    const rawArrays = await Promise.all(segments.map((seg) => extractFromSegment(model, seg)));
-    console.log(`[extract] model=${model.model} segments=${segments.length} elapsed=${Date.now() - t0}ms`);
-    const allRaw = deduplicateChunks(rawArrays.flat());
+    let rawArrays = await Promise.all(segments.map((seg) => extractFromSegment(model, seg)));
+    let allRaw = deduplicateChunks(rawArrays.flat());
+
+    // 0개면 완화된 프롬프트로 재시도
+    if (allRaw.length === 0) {
+      console.log(`[extract] 0 chunks — retrying with fallback prompt`);
+      const fallbackRaw = await extractFallback(model, text);
+      allRaw = deduplicateChunks(fallbackRaw);
+    }
+    console.log(`[extract] model=${model.model} segments=${segments.length} elapsed=${Date.now() - t0}ms chunks=${allRaw.length}`);
 
     // verbatim 검증 + 원문 등장 순서 정렬
     const chunks = allRaw
