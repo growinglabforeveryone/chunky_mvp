@@ -25,9 +25,17 @@ Notice: these are collocations, fixed expressions, or prepositional frames — n
 STRICT RULES:
 1. VERBATIM only — exact words, tense, spelling as they appear in the text
 2. NO single words, NO full sentences
-3. B2-C1 difficulty — REJECT trivially easy phrases made of only basic vocabulary
-   BAD: "thank you very", "how much you", "learned from him", "think about that"
-   These fail because any beginner already knows every word and the combination
+3. B2-C1 difficulty — REJECT phrases a Korean intermediate learner already knows intuitively.
+   The test: "Would a B1 learner need to memorize this as a unit, or do they already know it?"
+   BAD (too easy — meaning is obvious from individual words):
+     "compete with", "report to", "difficult for", "part of the success",
+     "may not be so simple", "talk about", "think about that", "deal with"
+   GOOD (non-obvious collocation, idiom, or fixed expression worth memorizing):
+     "wind down" (non-literal: 서서히 줄이다/마무리하다),
+     "struck a deal" (collocation, not just "made a deal"),
+     "clawed at the door" (vivid idiom),
+     "an undisclosed amount" (formal fixed expression),
+     "remain editorially independent" (collocation in media/business context)
 4. NO grammatical subject at the start ("the world is built for" → use "is built for")
 5. NO article (a/an/the) at the END — "was given a" is WRONG; use "was given" or extend to next noun
 6. DO NOT end with a topic-specific content noun that kills reusability
@@ -42,14 +50,7 @@ STRICT RULES:
    BAD: "acquired by Google", "oversees OpenAI's communications"
    GOOD: "acquired by", "oversees communications"
    If trimming a proper noun leaves fewer than 2 words and no reusable expression, skip the chunk entirely.
-10. STRUCTURAL REJECT — exclude phrases that are B1 or below due to structure alone:
-   - [basic adjective + preposition] alone: "difficult for", "good at", "famous for", "responsible for"
-     Exception: non-obvious collocations are OK ("prone to", "susceptible to", "contingent on")
-   - [basic verb + preposition] alone — basic verbs: be/have/do/go/come/get/make/take/look/talk/say/know/see
-     BAD: "compete with", "talk about", "report to", "deal with"
-     OK: idiomatic phrasal verbs where meaning is non-literal ("wind down", "phase out", "roll back", "weigh in on")
-   - [part of + noun]: "part of the success", "part of the plan" — too generic
-11. Distribute extraction across the FULL article — beginning, middle, AND end. Do not concentrate on one section.
+10. Distribute extraction across the FULL article — beginning, middle, AND end. Do not concentrate on one section.
 
 For korean_meaning: translate the literal meaning of the chunk IN ISOLATION — as if you saw it with no surrounding sentence. Do NOT include words from the surrounding context.
 BAD (context leaked):
