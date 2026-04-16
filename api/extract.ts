@@ -35,10 +35,21 @@ STRICT RULES:
    GOOD: "championing education" or just pick a cleaner chunk
 7. Prioritize: verb+noun collocations, prepositional frames, fixed idioms, passive constructions
 8. Focus on expressions useful across professional contexts
-9. REJECT chunks that contain proper nouns (company names, person names, product names, organizations)
-   BAD: "sit in OpenAI's strategy division", "oversees Google's communications", "Amazon announced"
-   GOOD: "sit in the strategy division", "oversees communications", "announced a new partnership"
-   If a sentence only yields proper-noun chunks, skip it entirely.
+9. PROPER NOUN BOUNDARY RULE — never include proper nouns (company/person/place/product names) inside a chunk.
+   If a good collocation is adjacent to a proper noun, CUT at the boundary and extract only the generic part.
+   BAD: "struck a deal with the Pentagon" — proper noun inside
+   GOOD: "struck a deal with" — cut at proper noun boundary
+   BAD: "acquired by Google", "oversees OpenAI's communications"
+   GOOD: "acquired by", "oversees communications"
+   If trimming a proper noun leaves fewer than 2 words and no reusable expression, skip the chunk entirely.
+10. STRUCTURAL REJECT — exclude phrases that are B1 or below due to structure alone:
+   - [basic adjective + preposition] alone: "difficult for", "good at", "famous for", "responsible for"
+     Exception: non-obvious collocations are OK ("prone to", "susceptible to", "contingent on")
+   - [basic verb + preposition] alone — basic verbs: be/have/do/go/come/get/make/take/look/talk/say/know/see
+     BAD: "compete with", "talk about", "report to", "deal with"
+     OK: idiomatic phrasal verbs where meaning is non-literal ("wind down", "phase out", "roll back", "weigh in on")
+   - [part of + noun]: "part of the success", "part of the plan" — too generic
+11. Distribute extraction across the FULL article — beginning, middle, AND end. Do not concentrate on one section.
 
 For korean_meaning: translate the literal meaning of the chunk IN ISOLATION — as if you saw it with no surrounding sentence. Do NOT include words from the surrounding context.
 BAD (context leaked):
@@ -271,9 +282,10 @@ export default async function handler(req: Request): Promise<Response> {
     const t0 = Date.now();
     const rawArrays = await Promise.all(segments.map((seg) => extractFromSegment(model, seg)));
 
-    // 고유명사 필터 → round-robin 균등 선택 (구간당 최소 1개, 전체 최대 12개)
-    const filteredArrays = rawArrays.map((arr) => arr.filter((c) => !hasProperNoun(c.word_phrase)));
-    let allRaw = roundRobinSelect(filteredArrays, 12);
+    // 고유명사 필터 → 전체 pool 합산 (품질 기반, round-robin 없음)
+    let allRaw = deduplicateChunks(
+      rawArrays.flat().filter((c) => !hasProperNoun(c.word_phrase))
+    );
 
     // 0개면 완화된 프롬프트로 재시도 (고유명사 필터 없이)
     if (allRaw.length === 0) {
