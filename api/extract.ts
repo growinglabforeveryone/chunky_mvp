@@ -35,8 +35,19 @@ STRICT RULES:
    GOOD: "championing education" or just pick a cleaner chunk
 7. Prioritize: verb+noun collocations, prepositional frames, fixed idioms, passive constructions
 8. Focus on expressions useful across professional contexts
+9. REJECT chunks that contain proper nouns (company names, person names, product names, organizations)
+   BAD: "sit in OpenAI's strategy division", "oversees Google's communications", "Amazon announced"
+   GOOD: "sit in the strategy division", "oversees communications", "announced a new partnership"
+   If a sentence only yields proper-noun chunks, skip it entirely.
 
-For korean_meaning: translate ONLY the chunk, no extra words.
+For korean_meaning: translate the literal meaning of the chunk IN ISOLATION — as if you saw it with no surrounding sentence. Do NOT include words from the surrounding context.
+BAD (context leaked):
+  "clawed at the door" → "~와 대화하려고 매우 애썼다"  ✗  ("대화하려고" comes from the sentence, not the chunk)
+  "in the wake of" → "이 사건 이후에"  ✗  ("이 사건" is context)
+GOOD (chunk only):
+  "clawed at the door" → "안달하다, 필사적으로 매달리다"  ✓
+  "in the wake of" → "~의 여파로, ~ 이후에"  ✓
+  "reach out to" → "~에게 연락하다"  ✓
 
 For example_sentence: find the sentence in the text that contains the chunk, then trim it by removing noise that does NOT affect understanding of the chunk:
 - Appositive phrases naming specific people/places (e.g., ", John Coogan and Jordi Hays,")
@@ -178,7 +189,7 @@ function validateAndFallback(
   return { exampleSentence: source ?? trimmed, exampleKo: undefined };
 }
 
-/** 중복 청크 제거: phrase가 이미 있는 다른 phrase의 부분 문자열이면 제거 */
+/** 중복 청크 제거 */
 function deduplicateChunks(chunks: RawChunk[]): RawChunk[] {
   const seen = new Set<string>();
   return chunks.filter((c) => {
@@ -187,6 +198,49 @@ function deduplicateChunks(chunks: RawChunk[]): RawChunk[] {
     seen.add(key);
     return true;
   });
+}
+
+/**
+ * 고유명사 포함 청크 필터.
+ * 첫 번째 단어 이후에 대문자로 시작하는 단어가 있으면 고유명사로 판단.
+ */
+function hasProperNoun(phrase: string): boolean {
+  const words = phrase.trim().split(/\s+/);
+  for (let i = 1; i < words.length; i++) {
+    const w = words[i].replace(/[''s.,]/g, "");
+    if (w.length > 1 && /^[A-Z]/.test(w) && w !== "I") return true;
+  }
+  return false;
+}
+
+/**
+ * 구간별 결과에서 round-robin으로 최대 maxTotal개 선택.
+ * 각 구간에서 최소 1개 보장, 앞쪽 구간 편중 방지.
+ */
+function roundRobinSelect(arrays: RawChunk[][], maxTotal: number): RawChunk[] {
+  const result: RawChunk[] = [];
+  const seen = new Set<string>();
+  let round = 0;
+
+  while (result.length < maxTotal) {
+    let anyAdded = false;
+    for (const arr of arrays) {
+      if (round < arr.length) {
+        const chunk = arr[round];
+        const key = chunk.word_phrase.toLowerCase();
+        if (!seen.has(key)) {
+          seen.add(key);
+          result.push(chunk);
+          anyAdded = true;
+          if (result.length >= maxTotal) return result;
+        }
+      }
+    }
+    if (!anyAdded) break;
+    round++;
+  }
+
+  return result;
 }
 
 export default async function handler(req: Request): Promise<Response> {
@@ -215,10 +269,13 @@ export default async function handler(req: Request): Promise<Response> {
     const segments = splitSegments(text, SEGMENT_CHARS, MAX_SEGMENTS);
 
     const t0 = Date.now();
-    let rawArrays = await Promise.all(segments.map((seg) => extractFromSegment(model, seg)));
-    let allRaw = deduplicateChunks(rawArrays.flat());
+    const rawArrays = await Promise.all(segments.map((seg) => extractFromSegment(model, seg)));
 
-    // 0개면 완화된 프롬프트로 재시도
+    // 고유명사 필터 → round-robin 균등 선택 (구간당 최소 1개, 전체 최대 12개)
+    const filteredArrays = rawArrays.map((arr) => arr.filter((c) => !hasProperNoun(c.word_phrase)));
+    let allRaw = roundRobinSelect(filteredArrays, 12);
+
+    // 0개면 완화된 프롬프트로 재시도 (고유명사 필터 없이)
     if (allRaw.length === 0) {
       console.log(`[extract] 0 chunks — retrying with fallback prompt`);
       const fallbackRaw = await extractFallback(model, text);
@@ -236,7 +293,6 @@ export default async function handler(req: Request): Promise<Response> {
         const posB = text.toLowerCase().indexOf(b.word_phrase.toLowerCase());
         return posA - posB;
       })
-      .slice(0, 12)
       .map((item) => {
         const { exampleSentence, exampleKo } = validateAndFallback(item, text);
         return {
