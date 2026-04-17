@@ -77,7 +77,11 @@ Trimming examples:
   TRIMMED:  "Sarah Chen warned that rising interest rates could slow growth."
 
 For example_ko: provide a natural Korean translation of the TRIMMED example_sentence.
-- Wrap the Korean word(s) that correspond to the English phrase in [[ and ]]
+- Wrap ONLY the Korean word(s) that correspond to the English chunk in [[ and ]]
+- If the Korean equivalent is discontinuous (split by a content noun not in the chunk), use MULTIPLE [[ ]] pairs:
+  chunk "look like yet another" → "[[또 다른]] 환경 보호 조치[[처럼 보일]] 수도 있다."
+  NOT: "[[또 다른 환경 보호 조치처럼 보일]] 수도 있다." (includes "환경 보호 조치" which is NOT in the chunk)
+- Do NOT include content nouns inside [[ ]] if they are not part of the English chunk
 - Translate naturally — a Korean reader should feel it is native Korean
 - Match the register (formal/casual) of the English source
 - Do NOT leak English words (keep proper nouns/brands in English only)

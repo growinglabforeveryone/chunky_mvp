@@ -1,14 +1,30 @@
 /**
- * example_ko에 포함된 [[...]] 마커를 파싱.
- * 반환: { clean: 마커 제거된 텍스트, start, end } — 마커 없으면 null
+ * example_ko에 포함된 [[...]] 마커를 파싱 (다중 마커 지원).
+ * 반환: { clean: 마커 제거된 텍스트, ranges: [{ start, end }, ...] } — 마커 없으면 null
  */
-export function parseKoHighlight(text: string): { clean: string; start: number; end: number } | null {
-  const match = text.match(/\[\[(.+?)\]\]/);
-  if (!match) return null;
-  const start = text.indexOf("[[");
-  const highlightText = match[1];
-  const clean = text.replace(/\[\[(.+?)\]\]/, "$1");
-  return { clean, start, end: start + highlightText.length };
+export function parseKoHighlight(text: string): { clean: string; ranges: Array<{ start: number; end: number }> } | null {
+  const pattern = /\[\[(.+?)\]\]/g;
+  if (!pattern.test(text)) return null;
+  pattern.lastIndex = 0;
+
+  const ranges: Array<{ start: number; end: number }> = [];
+  let clean = "";
+  let lastIdx = 0;
+  let offset = 0;
+  let match: RegExpExecArray | null;
+
+  while ((match = pattern.exec(text)) !== null) {
+    clean += text.slice(lastIdx, match.index);
+    const start = match.index - offset;
+    const content = match[1];
+    clean += content;
+    ranges.push({ start, end: start + content.length });
+    offset += 4; // [[ and ]]
+    lastIdx = match.index + match[0].length;
+  }
+  clean += text.slice(lastIdx);
+
+  return ranges.length > 0 ? { clean, ranges } : null;
 }
 
 function escapeRegex(str: string): string {

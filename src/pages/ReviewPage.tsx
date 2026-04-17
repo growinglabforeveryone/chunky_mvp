@@ -279,9 +279,9 @@ export default function ReviewPage() {
     : null;
   const showClozeFront = !!current.exampleKo && !!maskedSentence;
 
-  // 한국어 예문 마커 파싱 [[...]] → 강조 범위 추출
-  const koHighlight = current.exampleKo ? parseKoHighlight(current.exampleKo) : null;
-  const koDisplayText = koHighlight ? koHighlight.clean : (current.exampleKo ?? "");
+  // 한국어 예문 마커 파싱 [[...]] → 강조 범위 추출 (다중 마커 지원)
+  const koParsed = current.exampleKo ? parseKoHighlight(current.exampleKo) : null;
+  const koDisplayText = koParsed ? koParsed.clean : (current.exampleKo ?? "");
 
   return (
     <div className="mx-auto max-w-xl px-6 py-10">
@@ -320,13 +320,17 @@ export default function ReviewPage() {
               <>
                 {/* 보조: 한국어 예문 (phrase 강조) — 작게 위에 */}
                 <span className="text-center text-sm leading-relaxed text-muted-foreground">
-                  {koHighlight ? (
-                    <>
-                      {koDisplayText.slice(0, koHighlight.start)}
-                      <span className="text-primary font-semibold">{koDisplayText.slice(koHighlight.start, koHighlight.end)}</span>
-                      {koDisplayText.slice(koHighlight.end)}
-                    </>
-                  ) : koDisplayText}
+                  {koParsed ? (() => {
+                    const parts: React.ReactNode[] = [];
+                    let cursor = 0;
+                    koParsed.ranges.forEach((r, i) => {
+                      if (cursor < r.start) parts.push(koDisplayText.slice(cursor, r.start));
+                      parts.push(<span key={i} className="text-primary font-semibold">{koDisplayText.slice(r.start, r.end)}</span>);
+                      cursor = r.end;
+                    });
+                    if (cursor < koDisplayText.length) parts.push(koDisplayText.slice(cursor));
+                    return parts;
+                  })() : koDisplayText}
                 </span>
                 {/* 메인: 영어 빈칸 예문 — 크고 진하게 */}
                 <p className="text-center text-lg sm:text-xl font-semibold text-foreground leading-relaxed">
