@@ -15,7 +15,10 @@ const NEXT_REVIEW_LABELS = ["", "1일 뒤", "7일 뒤", "30일 뒤"];
 function isDue(chunk: { reviewStage?: number; nextReviewAt?: string; mastered?: boolean; status?: string }, refTime: Date) {
   if (chunk.mastered) return false;
   if (chunk.status === "excluded") return false;
-  if ((chunk.reviewStage ?? 0) === 0) return true;
+  if ((chunk.reviewStage ?? 0) === 0) {
+    if (chunk.nextReviewAt && new Date(chunk.nextReviewAt) > refTime) return false;
+    return true;
+  }
   if (!chunk.nextReviewAt) return true;
   return new Date(chunk.nextReviewAt) <= refTime;
 }
