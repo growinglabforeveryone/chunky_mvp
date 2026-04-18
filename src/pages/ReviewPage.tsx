@@ -7,7 +7,7 @@ import { RotateCcw, X, Check, ChevronDown, MinusCircle, MessageCircle, Send, Vol
 import { useTTS, preloadTTS } from "@/hooks/useTTS";
 import { toast } from "sonner";
 import { findRelatedPhrases } from "@/utils/relatedPhrases";
-import { maskPhraseInSentence, parseKoHighlight } from "@/utils/phraseMask";
+import { maskPhraseInSentence, parseKoHighlight, findKoreanHighlightRange } from "@/utils/phraseMask";
 
 const STAGE_LABELS = ["신규", "1일", "7일", "30일", "완료"];
 const NEXT_REVIEW_LABELS = ["", "1일 뒤", "7일 뒤", "30일 뒤"];
@@ -66,10 +66,12 @@ export default function ReviewPage() {
     });
   }, [savedChunks, sessionRefTime]);
 
-  // Initialize session once when dueCards become available — always shuffle
+  // Initialize session: source cards first (shuffled), then situation cards (shuffled)
   useEffect(() => {
     if (!sessionInitialized && dueCards.length > 0) {
-      setSessionQueue([...dueCards].sort(() => Math.random() - 0.5));
+      const source = dueCards.filter((c) => (c.cardType ?? "source") === "source").sort(() => Math.random() - 0.5);
+      const situation = dueCards.filter((c) => c.cardType === "situation").sort(() => Math.random() - 0.5);
+      setSessionQueue([...source, ...situation]);
       setSessionTotal(dueCards.length);
       setSessionInitialized(true);
     }
@@ -272,6 +274,7 @@ export default function ReviewPage() {
   if (!current) return null;
 
   const isRetry = failedIds.has(current.id);
+  const isSituation = current.cardType === "situation";
 
   // 앞면: 빈칸 예문 생성 (실패 시 null → fallback)
   const maskedSentence = current.exampleSentence && current.phrase
@@ -282,6 +285,24 @@ export default function ReviewPage() {
   // 한국어 예문 마커 파싱 [[...]] → 강조 범위 추출 (다중 마커 지원)
   const koParsed = current.exampleKo ? parseKoHighlight(current.exampleKo) : null;
   const koDisplayText = koParsed ? koParsed.clean : (current.exampleKo ?? "");
+
+  // 마커가 너무 넓으면(meaning 대비 2.5배 초과) meaning 기반 fallback 매칭
+  const koHighlightRanges = (() => {
+    if (koParsed) {
+      const totalHighlighted = koParsed.ranges.reduce((sum, r) => sum + (r.end - r.start), 0);
+      const meaningLen = (current.meaning ?? "").replace(/[~,\s]/g, "").length;
+      if (meaningLen > 0 && totalHighlighted > meaningLen * 2.5) {
+        const fallback = findKoreanHighlightRange(koDisplayText, current.meaning ?? "");
+        return fallback ? [{ start: fallback[0], end: fallback[1] }] : null;
+      }
+      return koParsed.ranges;
+    }
+    if (current.meaning && koDisplayText) {
+      const fallback = findKoreanHighlightRange(koDisplayText, current.meaning);
+      return fallback ? [{ start: fallback[0], end: fallback[1] }] : null;
+    }
+    return null;
+  })();
 
   return (
     <div className="mx-auto max-w-xl px-6 py-10">
@@ -311,19 +332,29 @@ export default function ReviewPage() {
               {isRetry && (
                 <span className="rounded-full bg-amber-50 border border-amber-200 px-2 py-0.5 text-xs text-amber-700">다시</span>
               )}
+              {isSituation && (
+                <span className="rounded-full bg-violet-50 border border-violet-200 px-2 py-0.5 text-xs text-violet-600">상황카드</span>
+              )}
               <span className="rounded-full bg-secondary px-2 py-0.5 text-xs text-muted-foreground/70">
                 {STAGE_LABELS[current.reviewStage ?? 0]}
               </span>
             </div>
 
-            {showClozeFront ? (
+            {isSituation ? (
+              <>
+                <p className="text-center text-base text-muted-foreground/60 text-xs">이 상황에서 영어로?</p>
+                <p className="text-center text-xl sm:text-2xl font-semibold font-serif leading-snug">
+                  {current.triggerKo}
+                </p>
+              </>
+            ) : showClozeFront ? (
               <>
                 {/* 보조: 한국어 예문 (phrase 강조) — 작게 위에 */}
                 <span className="text-center text-sm leading-relaxed text-muted-foreground">
-                  {koParsed ? (() => {
+                  {koHighlightRanges ? (() => {
                     const parts: React.ReactNode[] = [];
                     let cursor = 0;
-                    koParsed.ranges.forEach((r, i) => {
+                    koHighlightRanges.forEach((r, i) => {
                       if (cursor < r.start) parts.push(koDisplayText.slice(cursor, r.start));
                       parts.push(<span key={i} className="text-primary font-semibold">{koDisplayText.slice(r.start, r.end)}</span>);
                       cursor = r.end;

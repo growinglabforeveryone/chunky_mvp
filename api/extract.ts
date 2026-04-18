@@ -82,6 +82,9 @@ For example_ko: provide a natural Korean translation of the TRIMMED example_sent
   chunk "look like yet another" → "[[또 다른]] 환경 보호 조치[[처럼 보일]] 수도 있다."
   NOT: "[[또 다른 환경 보호 조치처럼 보일]] 수도 있다." (includes "환경 보호 조치" which is NOT in the chunk)
 - Do NOT include content nouns inside [[ ]] if they are not part of the English chunk
+- MARKER SIZE RULE: total marked text must be close in length to korean_meaning. Never over-mark.
+  BAD: chunk "close to the problem", meaning "문제에 가깝다" → "[[중 상당수에 놀라울 정도로 가깝습니다]]" (너무 넓음 — chunk에 없는 "상당수", "놀라울 정도로" 포함)
+  GOOD: chunk "close to the problem", meaning "문제에 가깝다" → "[[문제들]]에 [[가깝습니다]]"
 - Translate naturally — a Korean reader should feel it is native Korean
 - Match the register (formal/casual) of the English source
 - Do NOT leak English words (keep proper nouns/brands in English only)
@@ -184,8 +187,26 @@ function findSourceSentence(text: string, phrase: string): string | null {
 }
 
 /**
+ * example_ko의 [[ ]] 마커가 korean_meaning 대비 너무 넓은지 검증.
+ * 마커 내 총 글자수가 meaning의 2.5배 초과이면 false 반환.
+ */
+function isKoMarkerValid(exampleKo: string, koreanMeaning: string): boolean {
+  const markerPattern = /\[\[(.+?)\]\]/g;
+  let totalMarked = 0;
+  let match: RegExpExecArray | null;
+  while ((match = markerPattern.exec(exampleKo)) !== null) {
+    totalMarked += match[1].length;
+  }
+  if (totalMarked === 0) return true;
+  const meaningLen = koreanMeaning.replace(/[~,\s]/g, "").length;
+  if (meaningLen === 0) return true;
+  return totalMarked <= meaningLen * 2.5;
+}
+
+/**
  * Gemini가 트리밍한 예문에 chunk가 여전히 포함되어 있는지 검증.
  * 실패 시 원문 문장으로 fallback하고 example_ko는 undefined 처리.
+ * 마커가 너무 넓으면 example_ko도 무효화.
  */
 function validateAndFallback(
   item: RawChunk,
@@ -196,7 +217,12 @@ function validateAndFallback(
 
   // 트리밍된 예문에 chunk가 남아있으면 그대로 사용
   if (trimmed && trimmed.toLowerCase().includes(phrase)) {
-    return { exampleSentence: trimmed, exampleKo: item.example_ko?.trim() || undefined };
+    const rawKo = item.example_ko?.trim() || undefined;
+    const exampleKo = rawKo && isKoMarkerValid(rawKo, item.korean_meaning) ? rawKo : undefined;
+    if (rawKo && !exampleKo) {
+      console.warn(`[extract] ko marker too wide for "${item.word_phrase}" — dropping markers`);
+    }
+    return { exampleSentence: trimmed, exampleKo };
   }
 
   // chunk 누락 → 원문 전체 문장으로 fallback, ko는 무효화
