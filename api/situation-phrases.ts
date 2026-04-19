@@ -24,13 +24,14 @@ Generate 4-5 natural English expressions they could use in this situation.
 Each expression should be:
 - A useful chunk/phrase (not just a single word)
 - Natural and native-sounding
-- Varied in formality or nuance where possible
+- Varied in function or nuance where possible
 
 Return ONLY valid JSON array, no markdown:
 [
   {
     "phrase": "the English expression or sentence pattern",
-    "meaning": "한국어로 뜻/용도 설명 (언제 쓰는지 뉘앙스 포함, 20자 이내)",
+    "meaning": "한국어로 뜻 설명 (15자 이내, 간결하게)",
+    "functionLabel": "언제/어떻게 쓰는지 한국어로 (예: '반박을 완곡하게 할 때', '의견 차이를 인정할 때', 15자 이내)",
     "exampleSentence": "a complete natural example sentence using this phrase"
   }
 ]`;

@@ -359,14 +359,14 @@ export default function ReviewPage() {
 
             {isSituation ? (
               <>
-                {current.triggerKo && (
-                  <p className="text-center text-xs text-muted-foreground/50 leading-relaxed line-clamp-2 px-2">
-                    {current.triggerKo}
-                  </p>
-                )}
                 <p className="text-center text-xl sm:text-2xl font-semibold font-serif">
                   {current.meaning}
                 </p>
+                {current.functionLabel && (
+                  <p className="text-center text-xs text-muted-foreground/60 leading-relaxed">
+                    {current.functionLabel}
+                  </p>
+                )}
               </>
             ) : showClozeFront ? (
               <>
@@ -464,6 +464,13 @@ export default function ReviewPage() {
               <MinusCircle className="h-3 w-3" />
               복습 목록에서 제외
             </button>
+
+            {/* 상황카드 triggerKo — 뒷면 하단에 아주 작게 */}
+            {isSituation && current.triggerKo && (
+              <p className="mt-2 px-4 text-center text-[10px] text-muted-foreground/35 leading-relaxed line-clamp-2">
+                {current.triggerKo}
+              </p>
+            )}
           </div>
         </motion.div>
       </div>

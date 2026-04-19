@@ -50,7 +50,7 @@ interface ChunkStore {
   clearMiniSession: () => void;
   scheduleTomorrow: (ids: string[]) => Promise<void>;
   updateExampleKo: (id: string, ko: string) => void;
-  addSituationCard: (triggerKo: string, phrase: string, meaning: string, exampleSentence: string) => Promise<void>;
+  addSituationCard: (triggerKo: string, phrase: string, meaning: string, exampleSentence: string, functionLabel?: string) => Promise<void>;
 }
 
 export const useChunkStore = create<ChunkStore>((set, get) => ({
@@ -160,6 +160,7 @@ export const useChunkStore = create<ChunkStore>((set, get) => ({
       user_id: user?.id ?? null,
       card_type: c.cardType ?? "source",
       trigger_ko: c.triggerKo ?? null,
+      function_label: c.functionLabel ?? null,
     }));
 
     const { error } = await supabase.from("vocabulary").insert(rows);
@@ -325,7 +326,7 @@ export const useChunkStore = create<ChunkStore>((set, get) => ({
       savedChunks: s.savedChunks.map((c) => (c.id === id ? { ...c, exampleKo: ko } : c)),
     })),
 
-  addSituationCard: async (triggerKo, phrase, meaning, exampleSentence) => {
+  addSituationCard: async (triggerKo, phrase, meaning, exampleSentence, functionLabel?) => {
     const { data: { user } } = await supabase.auth.getUser();
     const id = crypto.randomUUID();
     const createdAt = new Date().toISOString();
@@ -335,6 +336,7 @@ export const useChunkStore = create<ChunkStore>((set, get) => ({
       meaning,
       example_sentence: exampleSentence,
       trigger_ko: triggerKo,
+      function_label: functionLabel ?? null,
       card_type: "situation",
       review_stage: 0,
       status: "active",
@@ -348,6 +350,7 @@ export const useChunkStore = create<ChunkStore>((set, get) => ({
       meaning,
       exampleSentence,
       triggerKo,
+      functionLabel,
       cardType: "situation",
       reviewStage: 0,
       status: "active",
@@ -404,6 +407,7 @@ export const useChunkStore = create<ChunkStore>((set, get) => ({
       createdAt: row.created_at,
       cardType: (row.card_type ?? "source") as CardType,
       triggerKo: row.trigger_ko ?? undefined,
+      functionLabel: row.function_label ?? undefined,
     }));
 
     set({ savedChunks: chunks, isLoadingSaved: false });

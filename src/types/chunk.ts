@@ -22,6 +22,7 @@ export interface Chunk {
   createdAt: string;
   cardType?: CardType;
   triggerKo?: string;
+  functionLabel?: string;
 }
 
 export interface Deck {

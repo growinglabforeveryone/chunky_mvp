@@ -46,10 +46,11 @@ export default function SpeakPage() {
       const data = await res.json();
       if (!res.ok || !data.phrases) throw new Error("failed");
       incrementUsage();
-      const chunks: Chunk[] = data.phrases.map((p: { phrase: string; meaning: string; exampleSentence: string }) => ({
+      const chunks: Chunk[] = data.phrases.map((p: { phrase: string; meaning: string; functionLabel?: string; exampleSentence: string }) => ({
         id: crypto.randomUUID(),
         phrase: p.phrase,
         meaning: p.meaning,
+        functionLabel: p.functionLabel,
         exampleSentence: p.exampleSentence,
         cardType: "situation" as const,
         triggerKo: situationKo.trim(),
