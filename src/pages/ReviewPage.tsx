@@ -296,7 +296,7 @@ export default function ReviewPage() {
   const maskedSentence = current.exampleSentence && current.phrase
     ? maskPhraseInSentence(current.exampleSentence, current.phrase)
     : null;
-  const showClozeFront = !!current.exampleKo && !!maskedSentence;
+  const showClozeFront = !!maskedSentence; // exampleKo 없어도 빈칸 예문 표시
 
   // 한국어 예문 마커 파싱 [[...]] → 강조 범위 추출 (다중 마커 지원)
   const koParsed = current.exampleKo ? parseKoHighlight(current.exampleKo) : null;
@@ -367,20 +367,22 @@ export default function ReviewPage() {
               </>
             ) : showClozeFront ? (
               <>
-                {/* 보조: 한국어 예문 (phrase 강조) — 작게 위에 */}
-                <span className="text-center text-sm leading-relaxed text-muted-foreground">
-                  {koHighlightRanges ? (() => {
-                    const parts: React.ReactNode[] = [];
-                    let cursor = 0;
-                    koHighlightRanges.forEach((r, i) => {
-                      if (cursor < r.start) parts.push(koDisplayText.slice(cursor, r.start));
-                      parts.push(<span key={i} className="text-primary font-semibold">{koDisplayText.slice(r.start, r.end)}</span>);
-                      cursor = r.end;
-                    });
-                    if (cursor < koDisplayText.length) parts.push(koDisplayText.slice(cursor));
-                    return parts;
-                  })() : koDisplayText}
-                </span>
+                {/* 보조: 한국어 예문 (exampleKo 있을 때만) */}
+                {current.exampleKo && (
+                  <span className="text-center text-sm leading-relaxed text-muted-foreground">
+                    {koHighlightRanges ? (() => {
+                      const parts: React.ReactNode[] = [];
+                      let cursor = 0;
+                      koHighlightRanges.forEach((r, i) => {
+                        if (cursor < r.start) parts.push(koDisplayText.slice(cursor, r.start));
+                        parts.push(<span key={i} className="text-primary font-semibold">{koDisplayText.slice(r.start, r.end)}</span>);
+                        cursor = r.end;
+                      });
+                      if (cursor < koDisplayText.length) parts.push(koDisplayText.slice(cursor));
+                      return parts;
+                    })() : koDisplayText}
+                  </span>
+                )}
                 {/* 메인: 영어 빈칸 예문 — 크고 진하게 */}
                 <p className="text-center text-lg sm:text-xl font-semibold text-foreground leading-relaxed">
                   {maskedSentence}
