@@ -278,7 +278,7 @@ export default function WritePracticePage() {
             {exampleKo && (
               <div className="rounded-lg bg-secondary/40 px-4 py-3 space-y-1">
                 <p className="text-xs text-muted-foreground">한국어 원문</p>
-                <p className="text-sm text-foreground leading-relaxed font-medium">{exampleKo}</p>
+                <p className="text-sm text-foreground leading-relaxed">{exampleKo}</p>
               </div>
             )}
 
