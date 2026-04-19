@@ -359,9 +359,13 @@ export default function ReviewPage() {
 
             {isSituation ? (
               <>
-                <p className="text-center text-base text-muted-foreground/60 text-xs">이 상황에서 영어로?</p>
-                <p className="text-center text-xl sm:text-2xl font-semibold font-serif leading-snug">
-                  {current.triggerKo}
+                {current.triggerKo && (
+                  <p className="text-center text-xs text-muted-foreground/50 leading-relaxed line-clamp-2 px-2">
+                    {current.triggerKo}
+                  </p>
+                )}
+                <p className="text-center text-xl sm:text-2xl font-semibold font-serif">
+                  {current.meaning}
                 </p>
               </>
             ) : showClozeFront ? (
