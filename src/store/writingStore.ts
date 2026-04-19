@@ -120,6 +120,8 @@ export const useWritingStore = create<WritingStore>((set, get) => ({
       },
       body: JSON.stringify({
         sentence: chunk.exampleSentence,
+        phrase: chunk.phrase,
+        meaning: chunk.meaning,
       }),
     });
 
