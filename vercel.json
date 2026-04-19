@@ -1,5 +1,6 @@
 {
   "framework": "vite",
+  "devCommand": "vite",
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api/$1" },
     { "source": "/(.*)\\.(.+)", "destination": "/$1.$2" },

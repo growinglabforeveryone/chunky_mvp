@@ -8,9 +8,11 @@ import { useSpeechRecognition } from "@/hooks/useSpeechRecognition";
 import TextReader from "@/components/TextReader";
 import ChunkCard from "@/components/ChunkCard";
 import { Chunk } from "@/types/chunk";
-import { Plus, Mic, MicOff, Save, Loader2, Sparkles, RotateCcw } from "lucide-react";
+import { Plus, Mic, MicOff, Save, Loader2, Sparkles, RotateCcw, MessageSquare } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
+
+type SpeakMode = "free" | "situation";
 
 export default function SpeakPage() {
   const {
@@ -23,6 +25,72 @@ export default function SpeakPage() {
 
   const { tier, usedThisMonth, canUseAI, incrementUsage } = useUsageStore();
   const navigate = useNavigate();
+
+  const [mode, setMode] = useState<SpeakMode>("free");
+
+  // ── Mode 2: 상황 표현 찾기 ──
+  const [situationKo, setSituationKo] = useState("");
+  const [situationChunks, setSituationChunks] = useState<Chunk[]>([]);
+  const [situationLoading, setSituationLoading] = useState(false);
+  const [situationPhase, setSituationPhase] = useState<"input" | "result">("input");
+
+  const handleSituationSearch = async () => {
+    if (!situationKo.trim() || situationLoading) return;
+    setSituationLoading(true);
+    try {
+      const res = await fetch("/api/situation-phrases", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ situationKo: situationKo.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.phrases) throw new Error("failed");
+      incrementUsage();
+      const chunks: Chunk[] = data.phrases.map((p: { phrase: string; meaning: string; exampleSentence: string }) => ({
+        id: crypto.randomUUID(),
+        phrase: p.phrase,
+        meaning: p.meaning,
+        exampleSentence: p.exampleSentence,
+        cardType: "situation" as const,
+        triggerKo: situationKo.trim(),
+        createdAt: new Date().toISOString(),
+      }));
+      setSituationChunks(chunks);
+      setSituationPhase("result");
+    } catch {
+      toast.error("표현 생성에 실패했어요. 다시 시도해주세요.");
+    } finally {
+      setSituationLoading(false);
+    }
+  };
+
+  const handleSituationCommit = async () => {
+    const toSave = situationChunks.filter((c) => c.phrase.trim());
+    if (toSave.length === 0) return;
+    const toCommit = toSave.map((c) => ({ id: c.id, phrase: c.phrase }));
+    try {
+      storeSetChunks(toSave);
+      setSourceName("상황 표현");
+      await commitChunks();
+      setPendingMiniCards(toCommit);
+      setSituationChunks([]);
+      setSituationPhase("input");
+      setSituationKo("");
+    } catch (err) {
+      storeSetChunks([]);
+      if (err instanceof VocabLimitError) {
+        setUpgradeModal({ reason: "vocab_limit", used: err.current, limit: err.limit });
+        return;
+      }
+      toast.error("저장에 실패했어요. 다시 시도해주세요.");
+    }
+  };
+
+  const handleSituationReset = () => {
+    setSituationChunks([]);
+    setSituationPhase("input");
+    setSituationKo("");
+  };
 
   const [inputText, setInputText] = useState("");
   const [correction, setCorrection] = useState<CorrectionResult | null>(null);
@@ -154,8 +222,110 @@ export default function SpeakPage() {
 
   return (
     <div className="mx-auto max-w-6xl px-6 py-8">
-      {/* ── 상태: input ── */}
-      {phase === "input" && (
+
+      {/* ── 모드 토글 ── */}
+      <div className="mx-auto mb-8 max-w-2xl flex gap-1 rounded-xl bg-secondary/50 p-1">
+        <button
+          onClick={() => setMode("free")}
+          className={`flex flex-1 items-center justify-center gap-2 rounded-lg py-2 text-sm transition-colors ${
+            mode === "free" ? "bg-card shadow-sm font-medium text-foreground" : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          <Mic className="h-3.5 w-3.5" />
+          혼자 말하기
+        </button>
+        <button
+          onClick={() => setMode("situation")}
+          className={`flex flex-1 items-center justify-center gap-2 rounded-lg py-2 text-sm transition-colors ${
+            mode === "situation" ? "bg-card shadow-sm font-medium text-foreground" : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          <MessageSquare className="h-3.5 w-3.5" />
+          상황 표현 찾기
+        </button>
+      </div>
+
+      {/* ── Mode 2: 상황 표현 찾기 ── */}
+      {mode === "situation" && situationPhase === "input" && (
+        <div className="mx-auto max-w-2xl space-y-6">
+          <div className="space-y-2 text-center">
+            <h1 className="font-serif text-3xl font-semibold tracking-tight text-foreground">
+              이 상황, 영어로 어떻게 말하지?
+            </h1>
+            <p className="text-muted-foreground">
+              말하고 싶었는데 표현이 안 떠올랐던 상황을 적어주세요
+            </p>
+          </div>
+          <textarea
+            value={situationKo}
+            onChange={(e) => setSituationKo(e.target.value)}
+            rows={5}
+            placeholder="예: 팀 회의에서 상대 의견을 부분적으로 인정하면서 반박하고 싶었어&#10;예: 친구한테 짜증나서 그 얘기 꺼내지도 말라고 하고 싶었어"
+            className="w-full resize-none rounded-xl border bg-card p-5 font-serif text-base leading-relaxed shadow-sm placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/20"
+          />
+          <button
+            onClick={!canUseAI() ? () => setUpgradeModal({ reason: "ai_limit", used: usedThisMonth, limit: FREE_AI_LIMIT }) : handleSituationSearch}
+            disabled={situationLoading || !situationKo.trim()}
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3 font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
+          >
+            {situationLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Sparkles className="h-5 w-5" />}
+            {situationLoading ? "표현 찾는 중..." : "표현 찾기"}
+          </button>
+          {tier === "free" && (
+            <p className="text-center text-xs text-muted-foreground">
+              이번 달 {usedThisMonth}/{FREE_AI_LIMIT}회 사용
+            </p>
+          )}
+        </div>
+      )}
+
+      {mode === "situation" && situationPhase === "result" && (
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mx-auto max-w-2xl space-y-4"
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="font-serif text-xl font-semibold text-foreground">추천 표현</h2>
+              <p className="mt-0.5 text-sm text-muted-foreground">"{situationKo}"</p>
+            </div>
+            <button
+              onClick={handleSituationReset}
+              className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
+            >
+              <RotateCcw className="h-3.5 w-3.5" />
+              다시 찾기
+            </button>
+          </div>
+
+          <div className="space-y-3">
+            {situationChunks.map((chunk, i) => (
+              <ChunkCard
+                key={chunk.id}
+                chunk={chunk}
+                index={i}
+                onUpdate={(id, updates) =>
+                  setSituationChunks((prev) => prev.map((c) => (c.id === id ? { ...c, ...updates } : c)))
+                }
+                onRemove={(id) => setSituationChunks((prev) => prev.filter((c) => c.id !== id))}
+              />
+            ))}
+          </div>
+
+          <button
+            onClick={handleSituationCommit}
+            disabled={situationChunks.length === 0}
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3 font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
+          >
+            <Save className="h-4 w-4" />
+            라이브러리에 저장
+          </button>
+        </motion.div>
+      )}
+
+      {/* ── Mode 1: 혼자 말하기 ── */}
+      {mode === "free" && phase === "input" && (
         <div className="mx-auto max-w-2xl space-y-6">
           <div className="space-y-2 text-center">
             <h1 className="font-serif text-3xl font-semibold tracking-tight text-foreground">
@@ -215,7 +385,7 @@ export default function SpeakPage() {
       )}
 
       {/* ── 상태 A: 교정 완료, 추출 전 ── */}
-      {phase === "corrected" && correction && (
+      {mode === "free" && phase === "corrected" && correction && (
         <motion.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
@@ -300,7 +470,7 @@ export default function SpeakPage() {
       )}
 
       {/* ── 상태 B: 추출 완료 ── */}
-      {phase === "chunks" && correction && (
+      {mode === "free" && phase === "chunks" && correction && (
         <motion.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}

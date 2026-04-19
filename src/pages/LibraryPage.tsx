@@ -1,8 +1,9 @@
 import { useChunkStore } from "@/store/chunkStore";
-import { Search, RotateCcw, ChevronLeft, ChevronRight } from "lucide-react";
+import { Search, RotateCcw, ChevronLeft, ChevronRight, Plus, X } from "lucide-react";
 import { useState } from "react";
 import ChunkCard from "@/components/ChunkCard";
 import { ChunkStatus } from "@/types/chunk";
+import { toast } from "sonner";
 
 type Tab = ChunkStatus;
 
@@ -14,11 +15,82 @@ const TAB_LABELS: Record<Tab, string> = {
 
 const PAGE_SIZE = 20;
 
+function AddSituationCardForm({ onClose }: { onClose: () => void }) {
+  const { addSituationCard } = useChunkStore();
+  const [triggerKo, setTriggerKo] = useState("");
+  const [phrase, setPhrase] = useState("");
+  const [meaning, setMeaning] = useState("");
+  const [example, setExample] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  const handleSave = async () => {
+    if (!triggerKo.trim() || !phrase.trim() || !meaning.trim()) {
+      toast.error("상황, 표현, 뜻은 필수예요");
+      return;
+    }
+    setSaving(true);
+    try {
+      await addSituationCard(triggerKo.trim(), phrase.trim(), meaning.trim(), example.trim() || phrase.trim());
+      toast.success("상황카드가 추가됐어요");
+      onClose();
+    } catch {
+      toast.error("저장에 실패했어요");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="rounded-2xl border bg-violet-50/50 p-5 space-y-3">
+      <div className="flex items-center justify-between">
+        <p className="text-sm font-medium text-violet-700">상황카드 추가</p>
+        <button onClick={onClose} className="text-muted-foreground hover:text-foreground">
+          <X className="h-4 w-4" />
+        </button>
+      </div>
+      <div className="space-y-2">
+        <input
+          value={triggerKo}
+          onChange={(e) => setTriggerKo(e.target.value)}
+          placeholder="상황 (예: 상대 주장을 부분 인정하며 반박하고 싶을 때) *"
+          className="w-full rounded-xl border bg-card px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-300"
+        />
+        <input
+          value={phrase}
+          onChange={(e) => setPhrase(e.target.value)}
+          placeholder="영어 표현 (예: I wouldn't go as far as to say A, but...) *"
+          className="w-full rounded-xl border bg-card px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-300"
+        />
+        <input
+          value={meaning}
+          onChange={(e) => setMeaning(e.target.value)}
+          placeholder="뜻 (한국어) *"
+          className="w-full rounded-xl border bg-card px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-300"
+        />
+        <input
+          value={example}
+          onChange={(e) => setExample(e.target.value)}
+          placeholder="예문 (선택)"
+          className="w-full rounded-xl border bg-card px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-300"
+        />
+      </div>
+      <button
+        onClick={handleSave}
+        disabled={saving}
+        className="w-full rounded-xl bg-violet-600 py-2 text-sm font-medium text-white hover:bg-violet-700 transition-colors disabled:opacity-50"
+      >
+        {saving ? "저장 중..." : "저장"}
+      </button>
+    </div>
+  );
+}
+
 export default function LibraryPage() {
   const { savedChunks, updateSavedChunk, removeSavedChunk, restoreChunk } = useChunkStore();
   const [search, setSearch] = useState("");
   const [activeTab, setActiveTab] = useState<Tab>("active");
   const [page, setPage] = useState(1);
+  const [showAddForm, setShowAddForm] = useState(false);
 
   const counts: Record<Tab, number> = {
     active: savedChunks.filter((c) => (c.status ?? "active") === "active").length,
@@ -32,7 +104,8 @@ export default function LibraryPage() {
     if (!search) return true;
     return (
       c.phrase.toLowerCase().includes(search.toLowerCase()) ||
-      c.meaning.includes(search)
+      c.meaning.includes(search) ||
+      (c.triggerKo ?? "").includes(search)
     );
   });
 
@@ -43,7 +116,20 @@ export default function LibraryPage() {
   return (
     <div className="mx-auto max-w-3xl px-6 py-8">
       <div className="mb-6 space-y-4">
-        <h1 className="font-serif text-2xl font-semibold text-foreground">라이브러리</h1>
+        <div className="flex items-center justify-between">
+          <h1 className="font-serif text-2xl font-semibold text-foreground">라이브러리</h1>
+          <button
+            onClick={() => setShowAddForm((v) => !v)}
+            className="flex items-center gap-1.5 rounded-xl border bg-card px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+          >
+            <Plus className="h-3.5 w-3.5" />
+            상황카드
+          </button>
+        </div>
+
+        {showAddForm && (
+          <AddSituationCardForm onClose={() => setShowAddForm(false)} />
+        )}
 
         {/* 탭 */}
         <div className="flex gap-1 rounded-xl bg-secondary/50 p-1">
@@ -73,7 +159,7 @@ export default function LibraryPage() {
           <input
             value={search}
             onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-            placeholder="표현 또는 뜻 검색..."
+            placeholder="표현, 뜻, 상황 검색..."
             className="w-full rounded-xl border bg-card py-2.5 pl-10 pr-4 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
           />
         </div>
@@ -113,6 +199,11 @@ export default function LibraryPage() {
                         <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${stageLabel.cls}`}>
                           {stageLabel.text}
                         </span>
+                        {chunk.cardType === "situation" && (
+                          <span className="rounded-full bg-violet-50 border border-violet-200 px-2 py-0.5 text-xs text-violet-600">
+                            상황카드
+                          </span>
+                        )}
                         {chunk.sourceName && (
                           <span className="rounded-full bg-secondary px-2 py-0.5 text-xs text-muted-foreground">
                             {chunk.sourceName}
@@ -130,6 +221,9 @@ export default function LibraryPage() {
                       </div>
                     );
                   })()}
+                  {chunk.cardType === "situation" && chunk.triggerKo && (
+                    <p className="mb-1 px-1 text-xs text-violet-500">상황: {chunk.triggerKo}</p>
+                  )}
                   <ChunkCard
                     chunk={chunk}
                     index={i}

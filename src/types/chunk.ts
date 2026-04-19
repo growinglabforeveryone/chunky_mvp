@@ -1,4 +1,5 @@
 export type ChunkStatus = "active" | "mastered" | "excluded";
+export type CardType = "source" | "situation";
 
 export interface Chunk {
   id: string;
@@ -19,6 +20,8 @@ export interface Chunk {
   lastWritingAt?: string;
   writingGraduated?: boolean;
   createdAt: string;
+  cardType?: CardType;
+  triggerKo?: string;
 }
 
 export interface Deck {

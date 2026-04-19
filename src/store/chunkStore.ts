@@ -1,4 +1,4 @@
-import { Chunk } from "@/types/chunk";
+import { Chunk, CardType } from "@/types/chunk";
 import { create } from "zustand";
 import { supabase } from "@/lib/supabaseClient";
 import { useUsageStore, FREE_VOCAB_LIMIT } from "@/store/usageStore";
@@ -50,6 +50,7 @@ interface ChunkStore {
   clearMiniSession: () => void;
   scheduleTomorrow: (ids: string[]) => Promise<void>;
   updateExampleKo: (id: string, ko: string) => void;
+  addSituationCard: (triggerKo: string, phrase: string, meaning: string, exampleSentence: string) => Promise<void>;
 }
 
 export const useChunkStore = create<ChunkStore>((set, get) => ({
@@ -124,6 +125,8 @@ export const useChunkStore = create<ChunkStore>((set, get) => ({
       next_review_at: null,
       status: "active",
       user_id: user?.id ?? null,
+      card_type: c.cardType ?? "source",
+      trigger_ko: c.triggerKo ?? null,
     }));
 
     const { error } = await supabase.from("vocabulary").insert(rows);
@@ -289,6 +292,37 @@ export const useChunkStore = create<ChunkStore>((set, get) => ({
       savedChunks: s.savedChunks.map((c) => (c.id === id ? { ...c, exampleKo: ko } : c)),
     })),
 
+  addSituationCard: async (triggerKo, phrase, meaning, exampleSentence) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    const id = crypto.randomUUID();
+    const createdAt = new Date().toISOString();
+    const { error } = await supabase.from("vocabulary").insert({
+      id,
+      phrase,
+      meaning,
+      example_sentence: exampleSentence,
+      trigger_ko: triggerKo,
+      card_type: "situation",
+      review_stage: 0,
+      status: "active",
+      user_id: user?.id ?? null,
+      created_at: createdAt,
+    });
+    if (error) throw error;
+    const newCard: Chunk = {
+      id,
+      phrase,
+      meaning,
+      exampleSentence,
+      triggerKo,
+      cardType: "situation",
+      reviewStage: 0,
+      status: "active",
+      createdAt,
+    };
+    set((s) => ({ savedChunks: [newCard, ...s.savedChunks] }));
+  },
+
   scheduleTomorrow: async (ids) => {
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
@@ -335,6 +369,8 @@ export const useChunkStore = create<ChunkStore>((set, get) => ({
       lastWritingAt: row.last_writing_at ?? undefined,
       writingGraduated: row.writing_graduated ?? false,
       createdAt: row.created_at,
+      cardType: (row.card_type ?? "source") as CardType,
+      triggerKo: row.trigger_ko ?? undefined,
     }));
 
     set({ savedChunks: chunks, isLoadingSaved: false });
