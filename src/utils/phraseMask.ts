@@ -122,5 +122,22 @@ export function findKoreanHighlightRange(
     if (result) return result;
   }
 
+  // Tier 4: 첫 단어 + 마지막 단어 앵커 매칭 (meaning과 example_ko 단어가 달라도 범위 추정)
+  // 예: meaning="가속화되는 호황 속에서", text="가속화되는 붐 속에서" → 첫("가속화되는")+끝("속에서")로 범위 특정
+  const needleWords = needle.trim().split(/\s+/).filter(Boolean);
+  if (needleWords.length >= 2) {
+    const firstNorm = normalize(needleWords[0]);
+    const lastNorm = normalize(needleWords[needleWords.length - 1]);
+    const firstIdx = H.indexOf(firstNorm);
+    if (firstIdx >= 0) {
+      const lastIdx = H.indexOf(lastNorm, firstIdx + firstNorm.length);
+      if (lastIdx >= 0) {
+        const start = restoreIndex(firstIdx);
+        const end = restoreIndex(lastIdx + lastNorm.length - 1) + 1;
+        return [start, end];
+      }
+    }
+  }
+
   return null;
 }
