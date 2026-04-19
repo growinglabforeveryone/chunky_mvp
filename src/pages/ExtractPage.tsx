@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useChunkStore, VocabLimitError } from "@/store/chunkStore";
 import { useUsageStore, FREE_AI_LIMIT } from "@/store/usageStore";
-import { extractChunks, getMeaning, MonthlyLimitError } from "@/lib/claudeExtractor";
+import { extractChunks, getMeaning, generateExampleKo, MonthlyLimitError } from "@/lib/claudeExtractor";
 import UpgradeModal from "@/components/UpgradeModal";
 import TextReader from "@/components/TextReader";
 import ChunkCard from "@/components/ChunkCard";
@@ -386,6 +386,12 @@ export default function ExtractPage() {
                   toast.success(`"${phrase}" 추가됨`);
                   getMeaning(phrase).then((meaning) => {
                     updateChunk(id, { meaning });
+                    // meaning 확정 후 순차적으로 한국어 예문 생성
+                    if (meaning && sentence) {
+                      generateExampleKo(sentence, phrase, meaning).then((exampleKo) => {
+                        if (exampleKo) updateChunk(id, { exampleKo });
+                      });
+                    }
                   });
                 }}
               />

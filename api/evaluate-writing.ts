@@ -44,6 +44,7 @@ Now write each field using these rules:
 - Write what a fluent native speaker would actually say in this situation — not just the corrected version.
 - Go beyond fixing errors: apply natural phrasing upgrades (softening language for politeness, idiomatic word choice, appropriate register).
 - Ask yourself: "Would a native professional write exactly this?" If not, improve it.
+- IMPORTANT: Preserve intentional stylistic choices and parenthetical expressions from the reference sentence (e.g. "and this is their word", "so to speak", "if you will"). Do NOT replace them with alternatives like "and I quote" — these are deliberate rhetorical devices, not errors.
 
 "whyNatural" (Korean, 1 sentence):
 - Explain the single most important reason the natural version reads more native.

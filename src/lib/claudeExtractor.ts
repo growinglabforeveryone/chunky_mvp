@@ -63,6 +63,28 @@ export async function getMeaning(phrase: string): Promise<string> {
   return meaning ?? "";
 }
 
+export async function generateExampleKo(
+  sentence: string,
+  phrase: string,
+  meaning: string,
+  vocabularyId?: string,
+): Promise<string | null> {
+  if (!sentence || !phrase || !meaning || meaning === "번역 중...") return null;
+  try {
+    const headers = await getAuthHeaders();
+    const response = await fetch("/api/translate-example", {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ sentence, phrase, meaning, ...(vocabularyId && { vocabularyId }) }),
+    });
+    if (!response.ok) return null;
+    const { korean } = await response.json();
+    return korean ?? null;
+  } catch {
+    return null;
+  }
+}
+
 export async function extractChunks(text: string): Promise<Chunk[]> {
   const headers = await getAuthHeaders();
   const controller = new AbortController();

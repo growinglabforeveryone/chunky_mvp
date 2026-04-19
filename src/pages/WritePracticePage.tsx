@@ -274,6 +274,14 @@ export default function WritePracticePage() {
               <span className="text-xs">+{XP_REWARDS.WRITING_PRACTICE} XP</span>
             </div>
 
+            {/* Korean original */}
+            {exampleKo && (
+              <div className="rounded-lg bg-secondary/40 px-4 py-3 space-y-1">
+                <p className="text-xs text-muted-foreground">한국어 원문</p>
+                <p className="text-sm text-foreground leading-relaxed font-medium">{exampleKo}</p>
+              </div>
+            )}
+
             {/* User's answer — first so user can compare */}
             <div className="rounded-lg bg-secondary/40 px-4 py-3 space-y-1">
               <p className="text-xs text-muted-foreground">내 답변</p>

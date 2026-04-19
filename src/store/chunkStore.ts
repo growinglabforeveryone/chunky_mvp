@@ -110,7 +110,40 @@ export const useChunkStore = create<ChunkStore>((set, get) => ({
       }
     }
 
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: { user, session } } = await supabase.auth.getUser() as any;
+    const accessToken = session?.access_token ?? (await supabase.auth.getSession()).data.session?.access_token;
+
+    // exampleKo 없는 청크 저장 전 한국어 예문 생성 (드래그/직접입력 경로 보정)
+    const needsKo = newChunks.filter(
+      (c) => !c.exampleKo && c.exampleSentence && c.phrase && c.meaning && c.meaning !== "번역 중..."
+    );
+    if (needsKo.length > 0 && accessToken) {
+      const koMap = new Map<string, string>();
+      const results = await Promise.allSettled(
+        needsKo.map((c) =>
+          Promise.race([
+            fetch("/api/translate-example", {
+              method: "POST",
+              headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` },
+              body: JSON.stringify({ sentence: c.exampleSentence, phrase: c.phrase, meaning: c.meaning }),
+            })
+              .then((r) => (r.ok ? r.json() : null))
+              .then((d) => ({ id: c.id, korean: d?.korean ?? null })),
+            new Promise<null>((_, rej) => setTimeout(() => rej(new Error("timeout")), 4000)),
+          ]).catch(() => null)
+        )
+      );
+      for (const r of results) {
+        if (r.status === "fulfilled" && r.value) {
+          const { id, korean } = r.value as { id: string; korean: string | null };
+          if (korean) koMap.set(id, korean);
+        }
+      }
+      // koMap 결과를 newChunks에 반영
+      for (const c of newChunks) {
+        if (koMap.has(c.id)) c.exampleKo = koMap.get(c.id);
+      }
+    }
 
     const rows = newChunks.map((c) => ({
       id: c.id,

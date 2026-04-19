@@ -3,12 +3,43 @@ import { createClient } from "@supabase/supabase-js";
 
 export const config = { runtime: "edge" };
 
+function isKoMarkerValid(exampleKo: string, koreanMeaning: string): boolean {
+  const pattern = /\[\[(.+?)\]\]/g;
+  let totalMarked = 0;
+  let match: RegExpExecArray | null;
+  while ((match = pattern.exec(exampleKo)) !== null) totalMarked += match[1].length;
+  if (totalMarked === 0) return true;
+  const meaningLen = koreanMeaning.replace(/[~,\s]/g, "").length;
+  return meaningLen === 0 || totalMarked <= meaningLen * 1.8;
+}
+
+function buildPrompt(sentence: string, phrase: string, meaning: string): string {
+  return `You are a Korean English teacher. Translate the following English sentence into natural Korean.
+
+chunk in the sentence: "${phrase}" (Korean meaning: ${meaning})
+
+Rules:
+- Translate naturally — not word-for-word
+- Wrap ONLY the Korean word(s) that correspond to the English chunk in [[ and ]]
+- If the Korean equivalent is discontinuous, use MULTIPLE [[ ]] pairs:
+  e.g. chunk "look like yet another" → "[[또 다른]] 환경 보호 조치[[처럼 보일]] 수도 있다."
+- Do NOT include content nouns inside [[ ]] if they are not part of the chunk
+- MARKER SIZE: total marked text ≤ meaning length × 1.8. Never over-mark.
+  BAD: chunk "close to the problem" → "[[중 상당수에 놀라울 정도로 가깝습니다]]" (too wide)
+  GOOD: chunk "close to the problem" → "[[문제들]]에 [[가깝습니다]]"
+- Match the register (formal/casual) of the English source
+- Keep proper nouns/brands in English
+- Return ONLY the Korean translation with [[ ]] markers, no explanation
+
+English sentence:
+${sentence}`;
+}
+
 export default async function handler(req: Request): Promise<Response> {
   if (req.method !== "POST") {
     return new Response("Method not allowed", { status: 405 });
   }
 
-  // Auth check (no usage count — internal caching)
   const authHeader = req.headers.get("authorization");
   if (!authHeader?.startsWith("Bearer ")) {
     return new Response(JSON.stringify({ error: "unauthorized" }), {
@@ -33,9 +64,17 @@ export default async function handler(req: Request): Promise<Response> {
   }
 
   try {
-    const { vocabularyId, sentence } = await req.json();
-    if (!sentence || typeof sentence !== "string" || !sentence.trim()) {
+    const body = await req.json();
+    const { vocabularyId, sentence, phrase, meaning } = body;
+
+    if (!sentence?.trim()) {
       return new Response(JSON.stringify({ error: "sentence is required" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+    if (!phrase?.trim() || !meaning?.trim()) {
+      return new Response(JSON.stringify({ error: "phrase and meaning are required" }), {
         status: 400,
         headers: { "Content-Type": "application/json" },
       });
@@ -44,33 +83,27 @@ export default async function handler(req: Request): Promise<Response> {
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
     const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
 
-    const aiResult = await model.generateContent(`You are a Korean English teacher. Translate the following English sentence into natural Korean.
+    const prompt = buildPrompt(sentence, phrase, meaning);
+    let aiResult = await model.generateContent(prompt);
+    let korean = aiResult.response.text()
+      .replace(/^```.*\n?/i, "").replace(/\n?```$/i, "").trim();
 
-Context:
-- The learner will use this Korean sentence to practice writing the English version.
+    // 마커 품질 검증 — 실패 시 1회 재시도
+    if (!isKoMarkerValid(korean, meaning)) {
+      aiResult = await model.generateContent(prompt);
+      const retry = aiResult.response.text()
+        .replace(/^```.*\n?/i, "").replace(/\n?```$/i, "").trim();
+      korean = isKoMarkerValid(retry, meaning) ? retry : retry.replace(/\[\[(.+?)\]\]/g, "$1");
+    }
 
-Rules:
-- Translate naturally into Korean — not word-for-word
-- Keep the meaning precise so a learner can reconstruct the original English sentence
-- Do NOT bias toward any specific English phrasing — translate the overall meaning
-- Return ONLY the Korean translation, no explanation, no punctuation change
-
-English sentence:
-${sentence}`);
-
-    const korean = aiResult.response.text().trim();
-
-    // Cache the translation back to vocabulary row using service role
-    const supabaseService = createClient(
-      process.env.SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY!,
-    );
-
-    // 해당 카드만 업데이트 (sibling 전파 없음 — chunk마다 마커 위치가 다름)
-    await supabaseService
-      .from("vocabulary")
-      .update({ example_ko: korean })
-      .eq("id", vocabularyId);
+    // vocabularyId가 있을 때만 DB 업데이트
+    if (vocabularyId) {
+      const supabaseService = createClient(
+        process.env.SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY!,
+      );
+      await supabaseService.from("vocabulary").update({ example_ko: korean }).eq("id", vocabularyId);
+    }
 
     return new Response(JSON.stringify({ korean }), {
       headers: { "Content-Type": "application/json" },
