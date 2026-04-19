@@ -40,7 +40,8 @@ function normalize(s) {
 function findKoreanHighlightRange(haystack, needle) {
   if (!needle || !haystack) return null;
   const H = normalize(haystack);
-  const N = normalize(needle);
+  const stripped = needle.replace(/^~\S+\s*/, "").trim();
+  const N = normalize(stripped || needle);
 
   const restoreIndex = (normIdx) => {
     let count = 0;

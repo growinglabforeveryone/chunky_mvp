@@ -79,7 +79,9 @@ export function findKoreanHighlightRange(
 
   const normalize = (s: string) => s.replace(/\s+/g, "").trim();
   const H = normalize(haystack);
-  const N = normalize(needle);
+  // ~와/~에/~을 같은 접두 패턴 제거 후 매칭 (예: "~와 관련된 저작권 침해" → "관련된 저작권 침해")
+  const stripped = needle.replace(/^~\S+\s*/, "").trim();
+  const N = normalize(stripped || needle);
 
   // 정규화된 인덱스 → 원문 인덱스 변환
   const restoreIndex = (normalizedIdx: number): number => {
