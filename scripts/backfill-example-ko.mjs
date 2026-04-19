@@ -14,28 +14,50 @@ const supabase = createClient(
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
 
-async function translate(sentence, phrase, meaning) {
-  const result = await model.generateContent(`You are a Korean English teacher. Translate the following English sentence into natural Korean.
+function isKoMarkerValid(exampleKo, koreanMeaning) {
+  const pattern = /\[\[(.+?)\]\]/g;
+  let totalMarked = 0;
+  let match;
+  while ((match = pattern.exec(exampleKo)) !== null) totalMarked += match[1].length;
+  if (totalMarked === 0) return true;
+  const meaningLen = koreanMeaning.replace(/[~,\s]/g, "").length;
+  return meaningLen === 0 || totalMarked <= meaningLen * 1.8;
+}
 
-Context:
-- English chunk in the sentence: "${phrase}" (Korean meaning: ${meaning})
+function buildPrompt(sentence, phrase, meaning) {
+  return `You are a Korean English teacher. Translate the following English sentence into natural Korean.
+
+chunk in the sentence: "${phrase}" (Korean meaning: ${meaning})
 
 Rules:
-- Translate naturally, not word-for-word
-- Wrap the Korean word(s) that correspond to the English chunk in [[ and ]]
-- Match the register (formal/casual) of the source
-- Do NOT leak English words (keep proper nouns/brands in English)
-- Do NOT add explanations or extra brackets
-- One sentence with natural Korean punctuation
-
-Example: if chunk is "raise serious questions about", output:
-"그 스캔들은 기업 거버넌스에 대해 [[심각한 의문을 제기했다]]."
+- Translate naturally — not word-for-word
+- Wrap ONLY the Korean word(s) that correspond to the English chunk in [[ and ]]
+- If the Korean equivalent is discontinuous, use MULTIPLE [[ ]] pairs:
+  e.g. chunk "look like yet another" → "[[또 다른]] 환경 보호 조치[[처럼 보일]] 수도 있다."
+- Do NOT include content nouns inside [[ ]] if they are not part of the chunk
+- MARKER SIZE: total marked text ≤ meaning length × 1.8. Never over-mark.
+  BAD: chunk "close to the problem" → "[[중 상당수에 놀라울 정도로 가깝습니다]]" (too wide)
+  GOOD: chunk "close to the problem" → "[[문제들]]에 [[가깝습니다]]"
+- Match the register (formal/casual) of the English source
+- Keep proper nouns/brands in English
+- Return ONLY the Korean translation with [[ ]] markers, no explanation
 
 English sentence:
-${sentence}
+${sentence}`;
+}
 
-Return ONLY the Korean translation with [[ ]] markers.`);
-  return result.response.text().trim();
+async function translate(sentence, phrase, meaning) {
+  const prompt = buildPrompt(sentence, phrase, meaning);
+  let result = await model.generateContent(prompt);
+  let korean = result.response.text().replace(/^```.*\n?/i, "").replace(/\n?```$/i, "").trim();
+
+  if (!isKoMarkerValid(korean, meaning)) {
+    result = await model.generateContent(prompt);
+    const retry = result.response.text().replace(/^```.*\n?/i, "").replace(/\n?```$/i, "").trim();
+    korean = isKoMarkerValid(retry, meaning) ? retry : retry.replace(/\[\[(.+?)\]\]/g, "$1");
+  }
+
+  return korean;
 }
 
 async function main() {
@@ -43,14 +65,15 @@ async function main() {
   const { data, error } = await supabase
     .from("vocabulary")
     .select("id, phrase, meaning, example_sentence")
-    .not("example_sentence", "is", null);
+    .not("example_sentence", "is", null)
+    .is("example_ko", null);
 
   if (error) {
     console.error("Fetch error:", error);
     process.exit(1);
   }
 
-  console.log(`Found ${data.length} cards to backfill (per-chunk, no sibling propagation).`);
+  console.log(`Found ${data.length} cards with null example_ko to backfill.`);
   if (data.length === 0) return;
 
   let success = 0;
