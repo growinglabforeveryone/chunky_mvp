@@ -25,7 +25,7 @@ function isDue(chunk: { reviewStage?: number; nextReviewAt?: string; mastered?: 
 
 export default function ReviewPage() {
   const { speak, playing } = useTTS();
-  const { savedChunks, advanceChunk, resetChunk, excludeChunk } = useChunkStore();
+  const { savedChunks, advanceChunk, resetChunk, excludeChunk, miniSessionCards, clearMiniSession } = useChunkStore();
   const { totalXP, level } = useLevelStore();
   const xpAtStart = useRef(totalXP);
 
@@ -66,16 +66,32 @@ export default function ReviewPage() {
     });
   }, [savedChunks, sessionRefTime]);
 
-  // Initialize session: source cards first (shuffled), then situation cards (shuffled)
+  // Initialize session
+  // miniSessionCards가 있으면 해당 카드만(추출 직후 "지금 한 번 보기"), 없으면 오늘 복습 due 카드
   useEffect(() => {
-    if (!sessionInitialized && dueCards.length > 0) {
+    if (sessionInitialized) return;
+
+    if (miniSessionCards.length > 0) {
+      // 추출 직후 미니 세션: savedChunks에서 ID 매칭해 full 데이터로 사용
+      const miniIds = new Set(miniSessionCards.map((c) => c.id));
+      const cards = savedChunks.filter((c) => miniIds.has(c.id));
+      if (cards.length > 0) {
+        setSessionQueue(cards);
+        setSessionTotal(cards.length);
+        setSessionInitialized(true);
+        clearMiniSession();
+      }
+      return;
+    }
+
+    if (dueCards.length > 0) {
       const source = dueCards.filter((c) => (c.cardType ?? "source") === "source").sort(() => Math.random() - 0.5);
       const situation = dueCards.filter((c) => c.cardType === "situation").sort(() => Math.random() - 0.5);
       setSessionQueue([...source, ...situation]);
       setSessionTotal(dueCards.length);
       setSessionInitialized(true);
     }
-  }, [dueCards, sessionInitialized]);
+  }, [dueCards, sessionInitialized, miniSessionCards, savedChunks]);
 
   const current = sessionQueue[0];
 
