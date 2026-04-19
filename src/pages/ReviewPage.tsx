@@ -286,12 +286,14 @@ export default function ReviewPage() {
   const koParsed = current.exampleKo ? parseKoHighlight(current.exampleKo) : null;
   const koDisplayText = koParsed ? koParsed.clean : (current.exampleKo ?? "");
 
-  // 마커가 너무 넓으면(meaning 대비 2.5배 초과) meaning 기반 fallback 매칭
+  // 마커 품질 검증: 너무 넓거나(1.8배 초과) 너무 좁으면(0.65배 미만) meaning 기반 fallback
   const koHighlightRanges = (() => {
     if (koParsed) {
       const totalHighlighted = koParsed.ranges.reduce((sum, r) => sum + (r.end - r.start), 0);
       const meaningLen = (current.meaning ?? "").replace(/[~,\s]/g, "").length;
-      if (meaningLen > 0 && totalHighlighted > meaningLen * 2.5) {
+      const isOverMarked = meaningLen > 0 && totalHighlighted > meaningLen * 1.8;
+      const isUnderMarked = meaningLen > 0 && totalHighlighted < meaningLen * 0.65;
+      if (isOverMarked || isUnderMarked) {
         const fallback = findKoreanHighlightRange(koDisplayText, current.meaning ?? "");
         return fallback ? [{ start: fallback[0], end: fallback[1] }] : null;
       }

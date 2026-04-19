@@ -200,7 +200,7 @@ function isKoMarkerValid(exampleKo: string, koreanMeaning: string): boolean {
   if (totalMarked === 0) return true;
   const meaningLen = koreanMeaning.replace(/[~,\s]/g, "").length;
   if (meaningLen === 0) return true;
-  return totalMarked <= meaningLen * 2.5;
+  return totalMarked <= meaningLen * 1.8;
 }
 
 /**
