@@ -308,8 +308,7 @@ export default function ReviewPage() {
       const totalHighlighted = koParsed.ranges.reduce((sum, r) => sum + (r.end - r.start), 0);
       const meaningLen = (current.meaning ?? "").replace(/[~,\s]/g, "").length;
       const isOverMarked = meaningLen > 0 && totalHighlighted > meaningLen * 1.8;
-      const isUnderMarked = meaningLen > 0 && totalHighlighted < meaningLen * 0.65;
-      if (isOverMarked || isUnderMarked) {
+      if (isOverMarked) {
         const fallback = findKoreanHighlightRange(koDisplayText, current.meaning ?? "");
         return fallback ? [{ start: fallback[0], end: fallback[1] }] : null;
       }
