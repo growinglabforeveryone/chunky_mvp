@@ -115,14 +115,7 @@ export function findKoreanHighlightRange(
     }
   }
 
-  // Tier 3: prefix 2~4글자 매칭
-  for (let len = Math.min(4, N.length); len >= 2; len--) {
-    const prefix = N.slice(0, len);
-    const result = tryMatch(prefix);
-    if (result) return result;
-  }
-
-  // Tier 4: 첫 단어 + 마지막 단어 앵커 매칭 (meaning과 example_ko 단어가 달라도 범위 추정)
+  // Tier 3: 첫 단어 + 마지막 단어 앵커 매칭 (meaning과 example_ko 단어가 달라도 범위 추정)
   // 예: meaning="가속화되는 호황 속에서", text="가속화되는 붐 속에서" → 첫("가속화되는")+끝("속에서")로 범위 특정
   const needleWords = needle.trim().split(/\s+/).filter(Boolean);
   if (needleWords.length >= 2) {
@@ -137,6 +130,13 @@ export function findKoreanHighlightRange(
         return [start, end];
       }
     }
+  }
+
+  // Tier 4: prefix 2~4글자 매칭 (최후 수단)
+  for (let len = Math.min(4, N.length); len >= 2; len--) {
+    const prefix = N.slice(0, len);
+    const result = tryMatch(prefix);
+    if (result) return result;
   }
 
   return null;
