@@ -12,6 +12,47 @@ import { toast } from "sonner";
 
 type Phase = "start" | "practice" | "feedback" | "complete";
 
+function parseFeedbackBullets(text: string): string[] {
+  // Strip "Learner's answer: ..." prefix the AI sometimes adds
+  const cleaned = text.replace(/^Learner'?s?\s+answer\s*:\s*"[^"]*"\s*/i, '').trim();
+  // Numbered bullets: 1. 2. 3.
+  const numbered = cleaned.split(/\s*\d+\.\s+(?=\S)/).filter(Boolean);
+  if (numbered.length > 1) return numbered;
+  // Dash bullets
+  const dashed = cleaned.split(/\n?\s*-\s+(?=\S)/).filter(Boolean);
+  if (dashed.length > 1) return dashed;
+  return [cleaned];
+}
+
+function wordDiff(original: string, revised: string): Array<{ text: string; changed: boolean }> {
+  const tok = (s: string) => s.match(/\S+|\s+/g) ?? [];
+  const a = tok(original);
+  const b = tok(revised);
+  const m = a.length, n = b.length;
+  const dp = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0) as number[]);
+  for (let i = 1; i <= m; i++)
+    for (let j = 1; j <= n; j++)
+      dp[i][j] = a[i - 1].toLowerCase() === b[j - 1].toLowerCase()
+        ? dp[i - 1][j - 1] + 1
+        : Math.max(dp[i - 1][j], dp[i][j - 1]);
+  const result: Array<{ text: string; changed: boolean }> = [];
+  let i = m, j = n;
+  while (i > 0 || j > 0) {
+    if (i > 0 && j > 0 && a[i - 1].toLowerCase() === b[j - 1].toLowerCase()) {
+      result.unshift({ text: b[j - 1], changed: false }); i--; j--;
+    } else if (j > 0 && (i === 0 || dp[i][j - 1] >= dp[i - 1][j])) {
+      result.unshift({ text: b[j - 1], changed: true }); j--;
+    } else { i--; }
+  }
+  return result;
+}
+
+function renderBold(text: string): React.ReactNode {
+  return text.split(/\*\*(.+?)\*\*/g).map((part, i) =>
+    i % 2 === 1 ? <strong key={i}>{part}</strong> : <span key={i}>{part}</span>
+  );
+}
+
 /**
  * 같은 exampleSentence를 가진 청크들이 연속으로 오지 않도록 round-robin 배치.
  */
@@ -42,7 +83,6 @@ function FeedbackScreen({
   exampleKo,
   userAnswer,
   result,
-  feedbackBullets,
   current,
   onGraduateAndNext,
   onNext,
@@ -52,12 +92,13 @@ function FeedbackScreen({
   exampleKo: string;
   userAnswer: string;
   result: WritingPracticeResult;
-  feedbackBullets: string[];
   current: Chunk | undefined;
   onGraduateAndNext: () => void;
   onNext: () => void;
 }) {
   const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const feedbackBullets = parseFeedbackBullets(result.feedback);
+  const diffTokens = wordDiff(userAnswer, result.naturalVersion);
 
   return (
     <div className="mx-auto max-w-xl px-6 py-10">
@@ -89,11 +130,20 @@ function FeedbackScreen({
             <p className="text-sm text-foreground leading-relaxed">{userAnswer}</p>
           </div>
 
-          {/* 더 자연스러운 답변 */}
+          {/* 더 자연스러운 답변 — 변경된 단어만 초록색 */}
           <div className="rounded-xl border bg-card p-5 space-y-2">
             <p className="text-xs font-medium text-muted-foreground">더 자연스러운 답변</p>
-            <p className="text-sm text-green-700 dark:text-green-400 leading-relaxed font-medium">
-              {result.naturalVersion}
+            <p className="text-sm leading-relaxed font-medium">
+              {diffTokens.map((token, i) =>
+                /^\s+$/.test(token.text) ? token.text : (
+                  <span
+                    key={i}
+                    className={token.changed ? "text-green-700 dark:text-green-400" : "text-foreground"}
+                  >
+                    {token.text}
+                  </span>
+                )
+              )}
             </p>
             {result.whyNatural && (
               <p className="text-xs text-muted-foreground leading-relaxed pt-1 border-t border-border/50">
@@ -123,15 +173,15 @@ function FeedbackScreen({
                   transition={{ duration: 0.2 }}
                   className="overflow-hidden"
                 >
-                  <div className="px-5 pb-5 space-y-2 border-t border-border/50 pt-3">
+                  <div className="px-5 pb-5 space-y-3 border-t border-border/50 pt-3">
                     {feedbackBullets.length > 1 ? (
                       feedbackBullets.map((bullet, i) => (
                         <p key={i} className="text-sm text-foreground leading-relaxed">
-                          - {bullet}
+                          - {renderBold(bullet)}
                         </p>
                       ))
                     ) : (
-                      <p className="text-sm text-foreground leading-relaxed">{result.feedback}</p>
+                      <p className="text-sm text-foreground leading-relaxed">{renderBold(result.feedback)}</p>
                     )}
                   </div>
                 </motion.div>
@@ -400,11 +450,6 @@ export default function WritePracticePage() {
 
   // ── Feedback screen ──────────────────────────────────────────
   if (phase === "feedback" && result) {
-    const feedbackBullets = result.feedback
-      .split(/\s*-\s+/)
-      .map((s) => s.trim())
-      .filter(Boolean);
-
     return (
       <FeedbackScreen
         currentIndex={currentIndex}
@@ -412,7 +457,6 @@ export default function WritePracticePage() {
         exampleKo={exampleKo}
         userAnswer={userAnswer}
         result={result}
-        feedbackBullets={feedbackBullets}
         current={current}
         onGraduateAndNext={handleGraduateAndNext}
         onNext={handleNext}

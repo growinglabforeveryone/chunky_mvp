@@ -36,7 +36,9 @@ Before writing output, silently evaluate:
 
 Now write each field using these rules:
 
-"feedback" (⚠️ 반드시 한국어로만 작성. 영어 문장 절대 금지. 영어 단어는 오류/예시 인용 시에만 사용 가능. 한국어 문장으로만 구성할 것):
+"feedback" (⚠️ 반드시 한국어로만 작성. 영어 문장 절대 금지. 영어 단어는 오류/예시 인용 시에만 사용 가능):
+- IMPORTANT FORMAT: Start directly with the first bullet point. Do NOT include "Learner's answer:", headers, or any preamble.
+- Use "- " (dash space) to start each bullet point. One point per bullet.
 - 가장 중요한 오류부터 시작 (철자 → 문법 → 단어 선택 순). 틀린 단어/표현과 올바른 표현을 명확히 지적.
 - 전체적인 구조와 타깃 표현 사용 여부를 솔직하게 평가.
 - 오류가 없으면 잘된 점 + 레벨업 포인트 1개 제시.
