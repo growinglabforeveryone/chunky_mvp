@@ -25,7 +25,8 @@ function parseFeedbackBullets(text: string): string[] {
 }
 
 function wordDiff(original: string, revised: string): Array<{ text: string; changed: boolean }> {
-  const tok = (s: string) => s.match(/\S+|\s+/g) ?? [];
+  // Split into words, punctuation, and whitespace separately so "Mr.Coogan" and "Mr. Coogan" share tokens
+  const tok = (s: string) => s.match(/[a-zA-Z']+|[^a-zA-Z'\s]+|\s+/g) ?? [];
   const a = tok(original);
   const b = tok(revised);
   const m = a.length, n = b.length;
