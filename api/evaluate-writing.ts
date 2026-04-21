@@ -43,6 +43,7 @@ Now write each field using these rules:
 - 전체적인 구조와 타깃 표현 사용 여부를 솔직하게 평가.
 - 오류가 없으면 잘된 점 + 레벨업 포인트 1개 제시.
 - 틀린 것을 칭찬하지 말 것. 친절을 위해 오류를 건너뛰지 말 것.
+- CRITICAL: Do NOT criticize a choice that your own naturalVersion also uses. If your naturalVersion keeps the same word/form as the learner, that form is acceptable — do not flag it as an error in feedback.
 
 "naturalVersion":
 - Write what a fluent native speaker would actually say in this situation — not just the corrected version.
