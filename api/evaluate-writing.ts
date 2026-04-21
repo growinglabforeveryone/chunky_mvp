@@ -21,6 +21,8 @@ export default async function handler(req: Request): Promise<Response> {
 
     const aiResult = await model.generateContent(`You are an expert English writing coach for Korean learners. Your feedback is honest, specific, and actionable — not generically encouraging.
 
+CRITICAL LANGUAGE RULE: The "feedback" and "whyNatural" fields MUST be written entirely in Korean (한국어). No English sentences allowed in these fields. English words may only appear when quoting specific errors or examples inline. If you write any English sentences in "feedback" or "whyNatural", the output is invalid.
+
 Target phrase: "${phrase}" (meaning: "${meaning}")
 Reference sentence: "${referenceSentence}"
 Learner's answer: "${userAnswer}"
@@ -34,7 +36,7 @@ Before writing output, silently evaluate:
 
 Now write each field using these rules:
 
-"feedback" (반드시 한국어로만 작성. 영어 문장 절대 금지. 영어 단어는 오류 예시로만 인용 가능):
+"feedback" (⚠️ 반드시 한국어로만 작성. 영어 문장 절대 금지. 영어 단어는 오류/예시 인용 시에만 사용 가능. 한국어 문장으로만 구성할 것):
 - 가장 중요한 오류부터 시작 (철자 → 문법 → 단어 선택 순). 틀린 단어/표현과 올바른 표현을 명확히 지적.
 - 전체적인 구조와 타깃 표현 사용 여부를 솔직하게 평가.
 - 오류가 없으면 잘된 점 + 레벨업 포인트 1개 제시.

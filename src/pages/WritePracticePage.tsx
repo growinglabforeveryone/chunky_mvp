@@ -5,7 +5,7 @@ import { useLevelStore } from "@/store/levelStore";
 import { Chunk } from "@/types/chunk";
 import { WritingPracticeResult } from "@/types/writing";
 import { motion, AnimatePresence } from "framer-motion";
-import { PenLine, RotateCcw, ChevronRight, Loader2, AlertCircle, Check } from "lucide-react";
+import { PenLine, RotateCcw, ChevronRight, ChevronDown, Loader2, AlertCircle, Check } from "lucide-react";
 import { XP_REWARDS } from "@/store/levelStore";
 import { WRITING_DAILY_LIMIT } from "@/store/writingStore";
 import { toast } from "sonner";
@@ -34,6 +34,148 @@ function interleaveByExample(chunks: Chunk[]): Chunk[] {
     idx++;
   }
   return result;
+}
+
+function FeedbackScreen({
+  currentIndex,
+  queueLength,
+  exampleKo,
+  userAnswer,
+  result,
+  feedbackBullets,
+  current,
+  onGraduateAndNext,
+  onNext,
+}: {
+  currentIndex: number;
+  queueLength: number;
+  exampleKo: string;
+  userAnswer: string;
+  result: WritingPracticeResult;
+  feedbackBullets: string[];
+  current: Chunk | undefined;
+  onGraduateAndNext: () => void;
+  onNext: () => void;
+}) {
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
+
+  return (
+    <div className="mx-auto max-w-xl px-6 py-10">
+      <AnimatePresence mode="wait">
+        <motion.div
+          key="feedback"
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0 }}
+          className="space-y-4"
+        >
+          {/* Progress */}
+          <div className="flex items-center justify-between text-sm text-muted-foreground">
+            <span>{currentIndex + 1} / {queueLength}</span>
+            <span className="text-xs">+{XP_REWARDS.WRITING_PRACTICE} XP</span>
+          </div>
+
+          {/* 한국어 원문 */}
+          {exampleKo && (
+            <div className="rounded-lg bg-secondary/40 px-4 py-3 space-y-1">
+              <p className="text-xs text-muted-foreground">한국어 원문</p>
+              <p className="text-sm text-foreground leading-relaxed">{exampleKo}</p>
+            </div>
+          )}
+
+          {/* 내 답변 */}
+          <div className="rounded-lg bg-secondary/40 px-4 py-3 space-y-1">
+            <p className="text-xs text-muted-foreground">내 답변</p>
+            <p className="text-sm text-foreground leading-relaxed">{userAnswer}</p>
+          </div>
+
+          {/* 더 자연스러운 답변 */}
+          <div className="rounded-xl border bg-card p-5 space-y-2">
+            <p className="text-xs font-medium text-muted-foreground">더 자연스러운 답변</p>
+            <p className="text-sm text-green-700 dark:text-green-400 leading-relaxed font-medium">
+              {result.naturalVersion}
+            </p>
+            {result.whyNatural && (
+              <p className="text-xs text-muted-foreground leading-relaxed pt-1 border-t border-border/50">
+                {result.whyNatural}
+              </p>
+            )}
+          </div>
+
+          {/* 핵심 피드백 — accordion */}
+          <div className="rounded-xl border bg-card overflow-hidden">
+            <button
+              onClick={() => setFeedbackOpen((v) => !v)}
+              className="w-full flex items-center justify-between px-5 py-4 text-left"
+            >
+              <p className="text-xs font-medium text-muted-foreground">핵심 피드백</p>
+              <ChevronDown
+                className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${feedbackOpen ? "rotate-180" : ""}`}
+              />
+            </button>
+            <AnimatePresence initial={false}>
+              {feedbackOpen && (
+                <motion.div
+                  key="feedback-body"
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: "auto", opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.2 }}
+                  className="overflow-hidden"
+                >
+                  <div className="px-5 pb-5 space-y-2 border-t border-border/50 pt-3">
+                    {feedbackBullets.length > 1 ? (
+                      feedbackBullets.map((bullet, i) => (
+                        <p key={i} className="text-sm text-foreground leading-relaxed">
+                          - {bullet}
+                        </p>
+                      ))
+                    ) : (
+                      <p className="text-sm text-foreground leading-relaxed">{result.feedback}</p>
+                    )}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+
+          {/* 원문 */}
+          <div className="rounded-xl border bg-card p-5 space-y-2">
+            <p className="text-xs font-medium text-muted-foreground">원문</p>
+            <p className="text-sm text-blue-700 dark:text-blue-400 leading-relaxed font-medium">
+              {current?.exampleSentence}
+            </p>
+          </div>
+
+          {/* Target phrase chip */}
+          <div className="flex items-center gap-2">
+            <span className="inline-flex items-center rounded-full border px-3 py-1 text-xs font-medium text-foreground">
+              {current?.phrase}
+            </span>
+            <span className="text-xs text-muted-foreground">{current?.meaning}</span>
+          </div>
+
+          {/* Action buttons */}
+          <div className="grid grid-cols-2 gap-3 pt-1">
+            <button
+              onClick={onGraduateAndNext}
+              className="flex items-center justify-center gap-1.5 rounded-xl border border-primary/30 bg-primary/10 px-4 py-3 text-sm font-medium text-primary hover:bg-primary/20 transition-colors"
+            >
+              <Check className="h-4 w-4" />
+              이 표현 익혔어요
+            </button>
+            <button
+              onClick={onNext}
+              className="flex items-center justify-center gap-1.5 rounded-xl bg-primary px-4 py-3 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
+            >
+              나중에 다시 연습할게요
+              <ChevronRight className="h-4 w-4" />
+            </button>
+          </div>
+        </motion.div>
+      </AnimatePresence>
+    </div>
+  );
 }
 
 export default function WritePracticePage() {
@@ -258,91 +400,23 @@ export default function WritePracticePage() {
 
   // ── Feedback screen ──────────────────────────────────────────
   if (phase === "feedback" && result) {
+    const feedbackBullets = result.feedback
+      .split(/\s*-\s+/)
+      .map((s) => s.trim())
+      .filter(Boolean);
+
     return (
-      <div className="mx-auto max-w-xl px-6 py-10">
-        <AnimatePresence mode="wait">
-          <motion.div
-            key="feedback"
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0 }}
-            className="space-y-4"
-          >
-            {/* Progress */}
-            <div className="flex items-center justify-between text-sm text-muted-foreground">
-              <span>{currentIndex + 1} / {queue.length}</span>
-              <span className="text-xs">+{XP_REWARDS.WRITING_PRACTICE} XP</span>
-            </div>
-
-            {/* Korean original */}
-            {exampleKo && (
-              <div className="rounded-lg bg-secondary/40 px-4 py-3 space-y-1">
-                <p className="text-xs text-muted-foreground">한국어 원문</p>
-                <p className="text-sm text-foreground leading-relaxed">{exampleKo}</p>
-              </div>
-            )}
-
-            {/* User's answer — first so user can compare */}
-            <div className="rounded-lg bg-secondary/40 px-4 py-3 space-y-1">
-              <p className="text-xs text-muted-foreground">내 답변</p>
-              <p className="text-sm text-foreground leading-relaxed">{userAnswer}</p>
-            </div>
-
-            {/* Korean feedback */}
-            <div className="rounded-xl border bg-card p-5">
-              <p className="text-xs font-medium text-muted-foreground mb-2">핵심 피드백</p>
-              <p className="text-sm text-foreground leading-relaxed">{result.feedback}</p>
-            </div>
-
-            {/* Natural version */}
-            <div className="rounded-xl border bg-card p-5 space-y-2">
-              <p className="text-xs font-medium text-muted-foreground">자연스럽게 다듬은 버전</p>
-              <p className="text-sm text-green-700 dark:text-green-400 leading-relaxed font-medium">
-                {result.naturalVersion}
-              </p>
-              {result.whyNatural && (
-                <p className="text-xs text-muted-foreground leading-relaxed pt-1 border-t border-border/50">
-                  {result.whyNatural}
-                </p>
-              )}
-            </div>
-
-            {/* Reference sentence — the stored original example */}
-            <div className="rounded-xl border bg-card p-5 space-y-2">
-              <p className="text-xs font-medium text-muted-foreground">원문</p>
-              <p className="text-sm text-blue-700 dark:text-blue-400 leading-relaxed font-medium">
-                {current?.exampleSentence}
-              </p>
-            </div>
-
-            {/* Target phrase chip */}
-            <div className="flex items-center gap-2">
-              <span className="inline-flex items-center rounded-full border px-3 py-1 text-xs font-medium text-foreground">
-                {current?.phrase}
-              </span>
-              <span className="text-xs text-muted-foreground">{current?.meaning}</span>
-            </div>
-
-            {/* Action buttons */}
-            <div className="grid grid-cols-2 gap-3 pt-1">
-              <button
-                onClick={handleGraduateAndNext}
-                className="flex items-center justify-center gap-1.5 rounded-xl border border-primary/30 bg-primary/10 px-4 py-3 text-sm font-medium text-primary hover:bg-primary/20 transition-colors"
-              >
-                <Check className="h-4 w-4" />
-                이 표현 익혔어요
-              </button>
-              <button
-                onClick={handleNext}
-                className="flex items-center justify-center gap-1.5 rounded-xl bg-primary px-4 py-3 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
-              >
-                나중에 다시 연습할게요
-                <ChevronRight className="h-4 w-4" />
-              </button>
-            </div>
-          </motion.div>
-        </AnimatePresence>
-      </div>
+      <FeedbackScreen
+        currentIndex={currentIndex}
+        queueLength={queue.length}
+        exampleKo={exampleKo}
+        userAnswer={userAnswer}
+        result={result}
+        feedbackBullets={feedbackBullets}
+        current={current}
+        onGraduateAndNext={handleGraduateAndNext}
+        onNext={handleNext}
+      />
     );
   }
 
