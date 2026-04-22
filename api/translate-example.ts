@@ -3,6 +3,12 @@ import { createClient } from "@supabase/supabase-js";
 
 export const config = { runtime: "edge" };
 
+function fixBrokenMarkers(text: string): string {
+  // If ]] is immediately followed by hangul (mid-eojeol break), extend marker to next boundary
+  // e.g. [[강력히 추]]진했다고 → [[강력히 추진했다고]]
+  return text.replace(/(\[\[[^\]]+)\]\]([가-힣ㄱ-ㆎ㈀-㈞㉠-㉾ꥠ-ꥼힰ-ퟆퟋ-ퟻ]+)/g, '$1$2]]');
+}
+
 function isKoMarkerValid(exampleKo: string, koreanMeaning: string): boolean {
   const pattern = /\[\[(.+?)\]\]/g;
   let totalMarked = 0;
@@ -23,10 +29,10 @@ Rules:
 - Wrap ONLY the Korean word(s) that correspond to the English chunk in [[ and ]]
 - If the Korean equivalent is discontinuous, use MULTIPLE [[ ]] pairs:
   e.g. chunk "look like yet another" → "[[또 다른]] 환경 보호 조치[[처럼 보일]] 수도 있다."
+- CRITICAL: Never break a Korean eojeol (어절, the characters between two spaces) in the middle. The [[ and ]] markers must open and close at word boundaries (spaces or sentence edges), not mid-word.
+  BAD: "[[강력히 추]]진했다고" (breaks mid-eojeol)
+  GOOD: "[[강력히 추진했다]]고"
 - Do NOT include content nouns inside [[ ]] if they are not part of the chunk
-- MARKER SIZE: total marked text ≤ meaning length × 1.8. Never over-mark.
-  BAD: chunk "close to the problem" → "[[중 상당수에 놀라울 정도로 가깝습니다]]" (too wide)
-  GOOD: chunk "close to the problem" → "[[문제들]]에 [[가깝습니다]]"
 - Match the register (formal/casual) of the English source
 - Keep proper nouns/brands in English
 - Return ONLY the Korean translation with [[ ]] markers, no explanation
@@ -87,12 +93,13 @@ export default async function handler(req: Request): Promise<Response> {
     let aiResult = await model.generateContent(prompt);
     let korean = aiResult.response.text()
       .replace(/^```.*\n?/i, "").replace(/\n?```$/i, "").trim();
+    korean = fixBrokenMarkers(korean);
 
     // 마커 품질 검증 — 실패 시 1회 재시도
     if (!isKoMarkerValid(korean, meaning)) {
       aiResult = await model.generateContent(prompt);
-      const retry = aiResult.response.text()
-        .replace(/^```.*\n?/i, "").replace(/\n?```$/i, "").trim();
+      const retry = fixBrokenMarkers(aiResult.response.text()
+        .replace(/^```.*\n?/i, "").replace(/\n?```$/i, "").trim());
       korean = isKoMarkerValid(retry, meaning) ? retry : retry.replace(/\[\[(.+?)\]\]/g, "$1");
     }
 

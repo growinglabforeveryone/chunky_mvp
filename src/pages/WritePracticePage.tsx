@@ -12,6 +12,15 @@ import { toast } from "sonner";
 
 type Phase = "start" | "practice" | "feedback" | "complete";
 
+function renderHighlighted(text: string): React.ReactNode {
+  const parts = text.split(/\[\[(.+?)\]\]/g);
+  return parts.map((part, i) =>
+    i % 2 === 1
+      ? <mark key={i} className="bg-primary/15 text-primary font-medium rounded-sm px-0.5 not-italic">{part}</mark>
+      : <span key={i}>{part}</span>
+  );
+}
+
 function parseFeedbackBullets(text: string): string[] {
   // Strip "Learner's answer: ..." prefix the AI sometimes adds
   const cleaned = text.replace(/^Learner'?s?\s+answer\s*:\s*"[^"]*"\s*/i, '').trim();
@@ -121,7 +130,7 @@ function FeedbackScreen({
           {exampleKo && (
             <div className="rounded-lg bg-secondary/40 px-4 py-3 space-y-1">
               <p className="text-xs text-muted-foreground">한국어 원문</p>
-              <p className="text-sm text-foreground leading-relaxed">{exampleKo}</p>
+              <p className="text-sm text-foreground leading-relaxed">{renderHighlighted(exampleKo)}</p>
             </div>
           )}
 
@@ -521,7 +530,7 @@ export default function WritePracticePage() {
                   <span className="text-sm">번역 불러오는 중...</span>
                 </div>
               ) : (
-                <p className="text-lg font-medium text-foreground leading-relaxed">{exampleKo}</p>
+                <p className="text-lg font-medium text-foreground leading-relaxed">{renderHighlighted(exampleKo)}</p>
               )}
             </div>
 
