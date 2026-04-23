@@ -26,12 +26,16 @@ chunk in the sentence: "${phrase}" (Korean meaning: ${meaning})
 
 Rules:
 - Translate naturally — not word-for-word
-- Wrap ONLY the Korean word(s) that correspond to the English chunk in [[ and ]]
+- Wrap ONLY the Korean word(s) that are the DIRECT translation of the English chunk in [[ and ]]
 - If the Korean equivalent is discontinuous, use MULTIPLE [[ ]] pairs:
   e.g. chunk "look like yet another" → "[[또 다른]] 환경 보호 조치[[처럼 보일]] 수도 있다."
 - CRITICAL: Never break a Korean eojeol (어절, the characters between two spaces) in the middle. The [[ and ]] markers must open and close at word boundaries (spaces or sentence edges), not mid-word.
   BAD: "[[강력히 추]]진했다고" (breaks mid-eojeol)
   GOOD: "[[강력히 추진했다]]고"
+- Do NOT include surrounding adverbs, negations, or modifiers in [[ ]] if they are not part of the chunk itself.
+  e.g. chunk "attributed" (meaning: 귀속시키다) → sentence has "잘못 귀속시켰다"
+  BAD: "[[잘못 귀속시켰다]]" (잘못 is NOT part of "attributed")
+  GOOD: "잘못 [[귀속시켰다]]" (mark only the direct translation)
 - Do NOT include content nouns inside [[ ]] if they are not part of the chunk
 - Match the register (formal/casual) of the English source
 - Keep proper nouns/brands in English
