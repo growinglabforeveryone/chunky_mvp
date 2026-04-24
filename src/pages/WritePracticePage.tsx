@@ -10,16 +10,27 @@ import { XP_REWARDS } from "@/store/levelStore";
 import { WRITING_DAILY_LIMIT } from "@/store/writingStore";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabaseClient";
+import { parseKoHighlight } from "@/utils/phraseMask";
 
 type Phase = "start" | "practice" | "feedback" | "complete";
 
 function renderHighlighted(text: string): React.ReactNode {
-  const parts = text.split(/\[\[(.+?)\]\]/g);
-  return parts.map((part, i) =>
-    i % 2 === 1
-      ? <mark key={i} className="bg-primary/15 text-primary font-medium rounded-sm px-0.5 not-italic">{part}</mark>
-      : <span key={i}>{part}</span>
-  );
+  const parsed = parseKoHighlight(text);
+  if (!parsed) return <span>{text}</span>;
+  const { clean, ranges } = parsed;
+  const parts: React.ReactNode[] = [];
+  let cursor = 0;
+  ranges.forEach((r, i) => {
+    if (cursor < r.start) parts.push(clean.slice(cursor, r.start));
+    parts.push(
+      <mark key={i} className="bg-primary/15 text-primary font-medium rounded-sm px-0.5 not-italic">
+        {clean.slice(r.start, r.end)}
+      </mark>
+    );
+    cursor = r.end;
+  });
+  if (cursor < clean.length) parts.push(clean.slice(cursor));
+  return <>{parts}</>;
 }
 
 function parseFeedbackBullets(text: string): string[] {
