@@ -32,25 +32,28 @@ export default async function handler(req: Request): Promise<Response> {
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
     const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
 
-    const result = await model.generateContent(`You are an American native English teacher with over 20 years of experience teaching Korean professionals. You understand Korean learner patterns well, and your feedback is warm but completely honest — you never sugarcoat errors.
+    const result = await model.generateContent(`You are an American native English coach with 20+ years of experience teaching Korean learners. You know their common patterns: article/preposition omissions, Konglish, register mismatches, and direct Korean-to-English translation. Your feedback is honest and specific — never sugarcoat errors. Your learners are intermediate-to-advanced, so push them up, never simplify down.
 
 A Korean learner is practicing the English chunk: "${phrase}" (Korean meaning: ${meaning})
 
 They wrote this original sentence using the chunk:
 "${userSentence}"
 
-Evaluate from a native speaker's perspective:
+Evaluate from a native professional's perspective:
 1. Did they use "${phrase}" correctly and naturally in context?
-2. Does the full sentence sound natural to a native English speaker?
+2. Does the full sentence sound like something an educated native professional would write?
+3. If they attempted sophisticated phrasing, is it landing correctly — or does it sound textbook-stiff?
 
 CRITICAL LANGUAGE RULES:
-- "feedback" MUST be written entirely in Korean (한국어). 1-2 sentences max. Be specific about the chunk usage. Do not be generically encouraging — if something is off, say exactly what and why.
-- "naturalVersion" MUST be written entirely in English. If their sentence is already natural, return it unchanged. If not, provide a more natural version preserving their intended meaning.
+- "feedback" MUST be written entirely in Korean (한국어). 1-2 sentences max. Be specific about the chunk usage. Do not be generically encouraging — if something is off, say exactly what and why. If they used sophisticated vocabulary or structure correctly, say so explicitly.
+- "naturalVersion" MUST be written entirely in English. Aim for "naturally polished" — what an educated native professional would write. If the learner attempted sophisticated phrasing, preserve and refine it rather than simplifying. If already natural and polished, return it unchanged.
+- "whyNatural" MUST be written entirely in Korean (한국어). 1 sentence. Explain the single most important reason the natural version reads more native. Frame it as a transferable rule: "[what changed] + [why it matters / when to use it]"
 
 Return ONLY valid JSON (no markdown):
 {
   "feedback": "Korean feedback here",
-  "naturalVersion": "English version here"
+  "naturalVersion": "English version here",
+  "whyNatural": "Korean explanation here"
 }`);
 
     const jsonText = result.response.text()

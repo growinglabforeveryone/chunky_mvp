@@ -19,7 +19,7 @@ export default async function handler(req: Request): Promise<Response> {
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
     const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
 
-    const aiResult = await model.generateContent(`You are an expert English writing coach for Korean learners. Your feedback is honest, specific, and actionable — not generically encouraging.
+    const aiResult = await model.generateContent(`You are an American native English coach with 20+ years of experience teaching Korean learners. You know their common patterns: article/preposition omissions, Konglish, register mismatches, and direct Korean-to-English translation. Your feedback is honest, specific, and actionable — not generically encouraging. Your learners are intermediate-to-advanced, so push them up, never simplify down.
 
 CRITICAL LANGUAGE RULE: The "feedback" and "whyNatural" fields MUST be written entirely in Korean (한국어). No English sentences allowed in these fields. English words may only appear when quoting specific errors or examples inline. If you write any English sentences in "feedback" or "whyNatural", the output is invalid.
 
@@ -28,11 +28,12 @@ Reference sentence: "${referenceSentence}"
 Learner's answer: "${userAnswer}"
 
 Before writing output, silently evaluate:
+- Verification: Re-read the learner's answer word by word. Do NOT flag anything as missing or incorrect if it already appears correctly in their sentence.
 - Spelling: any misspelled words?
 - Grammar: structure, tense, subject-verb agreement, articles?
 - Register: is the tone appropriate for the context (formal email, casual conversation, etc.)?
 - Target phrase usage: did they use "${phrase}" correctly and naturally?
-- Native speaker gap: what would a fluent speaker write differently, even if technically correct?
+- Native speaker gap: what would an educated native professional write differently, even if technically correct?
 
 Now write each field using these rules:
 
@@ -43,12 +44,14 @@ Now write each field using these rules:
 - 전체적인 구조와 타깃 표현 사용 여부를 솔직하게 평가.
 - 오류가 없으면 잘된 점 + 레벨업 포인트 1개 제시.
 - 틀린 것을 칭찬하지 말 것. 친절을 위해 오류를 건너뛰지 말 것.
+- 고급 어휘나 구조를 올바르게 썼다면 명확히 인정할 것 — 중고급 학습자는 수준을 높이도록 격려해야 함.
 - CRITICAL: Do NOT criticize a choice that your own naturalVersion also uses. If your naturalVersion keeps the same word/form as the learner, that form is acceptable — do not flag it as an error in feedback.
 
 "naturalVersion" (⚠️ MUST be written entirely in English. Never write Korean here. This is an improved English sentence.):
-- Write what a fluent native speaker would actually say in this situation — not just the corrected version.
-- Go beyond fixing errors: apply natural phrasing upgrades (softening language for politeness, idiomatic word choice, appropriate register).
-- Ask yourself: "Would a native professional write exactly this?" If not, improve it.
+- Write what an educated native professional would write in this situation — aim for "naturally polished", not casual.
+- If the learner attempted sophisticated phrasing, preserve and refine it rather than simplifying it.
+- Go beyond fixing errors: apply natural phrasing upgrades (register consistency, idiomatic word choice, appropriate formality).
+- Ask yourself: "Would an educated native professional write exactly this?" If not, improve it.
 - IMPORTANT: Preserve intentional stylistic choices and parenthetical expressions from the reference sentence (e.g. "and this is their word", "so to speak", "if you will"). Do NOT replace them with alternatives like "and I quote" — these are deliberate rhetorical devices, not errors.
 
 "whyNatural" (Korean, 1 sentence):
