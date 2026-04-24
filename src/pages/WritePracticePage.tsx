@@ -102,7 +102,7 @@ function interleaveByExample(chunks: Chunk[]): Chunk[] {
 function Mode2Practice({ phrase, meaning }: { phrase: string; meaning: string }) {
   const [phase, setPhase] = useState<"idle" | "input" | "submitting" | "done">("idle");
   const [answer, setAnswer] = useState("");
-  const [result, setResult] = useState<{ feedback: string; naturalVersion: string } | null>(null);
+  const [result, setResult] = useState<{ feedback: string; naturalVersion: string; whyNatural?: string } | null>(null);
 
   const handleSubmit = async () => {
     if (!answer.trim() || phase === "submitting") return;
@@ -162,7 +162,12 @@ function Mode2Practice({ phrase, meaning }: { phrase: string; meaning: string })
             </p>
           </div>
         )}
-        <p className="text-sm text-muted-foreground leading-relaxed border-t border-border/50 pt-2">{result.feedback}</p>
+        <div className="border-t border-border/50 pt-2 space-y-1.5">
+          <p className="text-sm text-muted-foreground leading-relaxed">{result.feedback}</p>
+          {result.whyNatural && (
+            <p className="text-xs text-muted-foreground/70 leading-relaxed">{result.whyNatural}</p>
+          )}
+        </div>
       </div>
     );
   }
