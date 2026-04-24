@@ -73,7 +73,7 @@ export default function AppNav() {
       </header>
 
       {/* ── 모바일 상단 바 (sm 미만에서만 표시, /write 제외) ── */}
-      <header className={`sticky top-0 z-50 flex h-12 items-center justify-between border-b bg-card/80 px-4 backdrop-blur-sm sm:hidden ${pathname === "/write" ? "hidden" : ""}`}>
+      <header className={`sticky top-0 z-50 h-12 items-center justify-between border-b bg-card/80 px-4 backdrop-blur-sm sm:hidden ${pathname === "/write" ? "hidden" : "flex"}`}>
         <Link to="/" className="flex items-center gap-2">
           <span className="text-base text-foreground" style={{ fontFamily: "'Nunito', sans-serif", fontWeight: 800, letterSpacing: '-0.5px' }}>
             Chunky

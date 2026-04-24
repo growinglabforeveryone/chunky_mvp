@@ -45,7 +45,7 @@ Now write each field using these rules:
 - 틀린 것을 칭찬하지 말 것. 친절을 위해 오류를 건너뛰지 말 것.
 - CRITICAL: Do NOT criticize a choice that your own naturalVersion also uses. If your naturalVersion keeps the same word/form as the learner, that form is acceptable — do not flag it as an error in feedback.
 
-"naturalVersion":
+"naturalVersion" (⚠️ MUST be written entirely in English. Never write Korean here. This is an improved English sentence.):
 - Write what a fluent native speaker would actually say in this situation — not just the corrected version.
 - Go beyond fixing errors: apply natural phrasing upgrades (softening language for politeness, idiomatic word choice, appropriate register).
 - Ask yourself: "Would a native professional write exactly this?" If not, improve it.
