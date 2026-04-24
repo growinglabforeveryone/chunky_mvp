@@ -9,6 +9,7 @@ import { PenLine, RotateCcw, ChevronRight, ChevronDown, Loader2, AlertCircle, Ch
 import { XP_REWARDS } from "@/store/levelStore";
 import { WRITING_DAILY_LIMIT } from "@/store/writingStore";
 import { toast } from "sonner";
+import { supabase } from "@/lib/supabaseClient";
 
 type Phase = "start" | "practice" | "feedback" | "complete";
 
@@ -85,6 +86,111 @@ function interleaveByExample(chunks: Chunk[]): Chunk[] {
     idx++;
   }
   return result;
+}
+
+function Mode2Practice({ phrase, meaning }: { phrase: string; meaning: string }) {
+  const [phase, setPhase] = useState<"idle" | "input" | "submitting" | "done">("idle");
+  const [answer, setAnswer] = useState("");
+  const [result, setResult] = useState<{ feedback: string; naturalVersion: string } | null>(null);
+
+  const handleSubmit = async () => {
+    if (!answer.trim() || phase === "submitting") return;
+    setPhase("submitting");
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      const res = await fetch("/api/evaluate-writing-free", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ userSentence: answer.trim(), phrase, meaning }),
+      });
+      const data = await res.json();
+      setResult(data);
+      setPhase("done");
+    } catch {
+      toast.error("평가 중 오류가 발생했어요.");
+      setPhase("input");
+    }
+  };
+
+  if (phase === "idle") {
+    return (
+      <button
+        onClick={() => setPhase("input")}
+        className="w-full rounded-xl border-2 border-dashed border-border px-4 py-3 text-sm text-muted-foreground hover:border-primary/40 hover:text-primary transition-colors"
+      >
+        ✍️ &nbsp;{phrase}를 활용해 나만의 문장 써보기
+      </button>
+    );
+  }
+
+  if (phase === "done" && result) {
+    const diffTokens = wordDiff(answer, result.naturalVersion);
+    const isDifferent = result.naturalVersion.toLowerCase().trim() !== answer.toLowerCase().trim();
+    return (
+      <div className="rounded-xl border bg-card p-5 space-y-3">
+        <p className="text-xs font-medium text-muted-foreground">나만의 문장 — 원어민 피드백</p>
+        <div className="rounded-lg bg-secondary/40 px-3 py-2">
+          <p className="text-xs text-muted-foreground mb-1">내 문장</p>
+          <p className="text-sm text-foreground">{answer}</p>
+        </div>
+        {isDifferent && (
+          <div>
+            <p className="text-xs text-muted-foreground mb-1">더 자연스럽게</p>
+            <p className="text-sm leading-relaxed font-medium">
+              {diffTokens.map((token, i) =>
+                /^\s+$/.test(token.text) ? token.text : (
+                  <span key={i} className={token.changed ? "text-green-700 dark:text-green-400" : "text-foreground"}>
+                    {token.text}
+                  </span>
+                )
+              )}
+            </p>
+          </div>
+        )}
+        <p className="text-sm text-muted-foreground leading-relaxed border-t border-border/50 pt-2">{result.feedback}</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="rounded-xl border bg-card p-5 space-y-3">
+      <div>
+        <p className="text-xs font-medium text-foreground">
+          <span className="font-semibold">{phrase}</span>를 활용해 나만의 문장 써보기
+        </p>
+        <p className="text-xs text-muted-foreground mt-0.5">시제·형태 변형 OK — 내 상황에 맞게 자유롭게</p>
+      </div>
+      <textarea
+        value={answer}
+        onChange={(e) => setAnswer(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" && !e.shiftKey && answer.trim() && !("ontouchstart" in window)) {
+            e.preventDefault();
+            handleSubmit();
+          }
+        }}
+        placeholder={`"${phrase}"를 써서 나만의 문장을 만들어보세요`}
+        rows={2}
+        disabled={phase === "submitting"}
+        className="w-full resize-none rounded-xl border bg-background px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 disabled:opacity-50 transition"
+      />
+      <button
+        onClick={handleSubmit}
+        disabled={!answer.trim() || phase === "submitting"}
+        className="w-full flex items-center justify-center gap-2 rounded-xl border border-primary/30 bg-primary/10 px-4 py-2.5 text-sm font-medium text-primary hover:bg-primary/20 disabled:opacity-40 transition-colors"
+      >
+        {phase === "submitting" ? (
+          <><Loader2 className="h-4 w-4 animate-spin" />평가 중...</>
+        ) : (
+          "원어민 선생님께 피드백 받기"
+        )}
+      </button>
+    </div>
+  );
 }
 
 function FeedbackScreen({
@@ -198,6 +304,11 @@ function FeedbackScreen({
               )}
             </AnimatePresence>
           </div>
+
+          {/* Mode 2 — 나만의 문장 써보기 */}
+          {current && (
+            <Mode2Practice phrase={current.phrase} meaning={current.meaning} />
+          )}
 
           {/* 원문 */}
           <div className="rounded-xl border bg-card p-5 space-y-2">
