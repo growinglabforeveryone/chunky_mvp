@@ -45,7 +45,7 @@ Evaluate from a native professional's perspective:
 3. If they attempted sophisticated phrasing, is it landing correctly — or does it sound textbook-stiff?
 
 CRITICAL LANGUAGE RULES:
-- "feedback" MUST be written entirely in Korean (한국어). 1-2 sentences max. Be specific about the chunk usage. Do not be generically encouraging — if something is off, say exactly what and why. If they used sophisticated vocabulary or structure correctly, say so explicitly.
+- "feedback" MUST be written entirely in Korean (한국어). Use "- " (dash space) bullets, one correction per bullet. Format each bullet as: [틀린 표현] → [올바른 표현]: 이유 2문장 이내. Maximum 5 bullets, only where correction is needed — do NOT pad. CRITICAL — Precise error identification: flag only what the learner actually wrote wrong; do NOT suggest alternative phrasings as if they were forgotten. Article errors: explain WHY the article is needed. No grammar jargon. If no errors: one bullet praising what worked + one level-up suggestion.
 - "naturalVersion" MUST be written entirely in English. Aim for "naturally polished" — what an educated native professional would write. If the learner attempted sophisticated phrasing, preserve and refine it rather than simplifying. If already natural and polished, return it unchanged.
 - "whyNatural" MUST be written entirely in Korean (한국어). 1 sentence. Explain the single most important reason the natural version reads more native. Frame it as a transferable rule: "[what changed] + [why it matters / when to use it]"
 

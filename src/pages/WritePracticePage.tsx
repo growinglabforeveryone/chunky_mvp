@@ -150,7 +150,7 @@ function Mode2Practice({ phrase, meaning }: { phrase: string; meaning: string })
         </div>
         {isDifferent && (
           <div>
-            <p className="text-xs text-muted-foreground mb-1">더 자연스럽게</p>
+            <p className="text-xs text-muted-foreground mb-1">교정된 답변</p>
             <p className="text-sm leading-relaxed font-medium">
               {diffTokens.map((token, i) =>
                 /^\s+$/.test(token.text) ? token.text : (
@@ -264,7 +264,7 @@ function FeedbackScreen({
 
           {/* 더 자연스러운 답변 — 변경된 단어만 초록색 */}
           <div className="rounded-xl border bg-card p-5 space-y-2">
-            <p className="text-xs font-medium text-muted-foreground">더 자연스러운 답변</p>
+            <p className="text-xs font-medium text-muted-foreground">교정된 답변</p>
             <p className="text-sm leading-relaxed font-medium">
               {diffTokens.map((token, i) =>
                 /^\s+$/.test(token.text) ? token.text : (

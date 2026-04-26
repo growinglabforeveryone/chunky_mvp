@@ -38,13 +38,15 @@ Before writing output, silently evaluate:
 Now write each field using these rules:
 
 "feedback" (⚠️ 반드시 한국어로만 작성. 영어 문장 절대 금지. 영어 단어는 오류/예시 인용 시에만 사용 가능):
-- IMPORTANT FORMAT: Start directly with the first bullet point. Do NOT include "Learner's answer:", headers, or any preamble.
-- Use "- " (dash space) to start each bullet point. One point per bullet.
-- 가장 중요한 오류부터 시작 (철자 → 문법 → 단어 선택 순). 틀린 단어/표현과 올바른 표현을 명확히 지적.
-- 전체적인 구조와 타깃 표현 사용 여부를 솔직하게 평가.
-- 오류가 없으면 잘된 점 + 레벨업 포인트 1개 제시.
-- 틀린 것을 칭찬하지 말 것. 친절을 위해 오류를 건너뛰지 말 것.
-- 고급 어휘나 구조를 올바르게 썼다면 명확히 인정할 것 — 중고급 학습자는 수준을 높이도록 격려해야 함.
+- IMPORTANT FORMAT: Start directly with the first bullet. Do NOT include headers or any preamble.
+- Use "- " (dash space) to start each bullet. One correction per bullet.
+- Format each bullet as: [틀린 표현] → [올바른 표현]: 이유 2문장 이내.
+- Maximum 5 bullets. Only flag things that actually need correction — do NOT pad with extra bullets.
+- Start with the most impactful error first.
+- CRITICAL — Precise error identification: Base your feedback ONLY on what the learner actually wrote. Do NOT suggest alternative phrasings as if they were "forgotten." Example: if they wrote "over past four years", the only error is a missing 'the' → "over the past four years". Do NOT mention "in" as something they omitted. One specific error per bullet.
+- Article errors: briefly explain WHY the article is needed (e.g., specific institution/system vs. general concept).
+- No grammar jargon (avoid terms like "부사구", "관계절"). Use plain, practical language.
+- If there are no errors: one bullet praising what worked well + one level-up suggestion.
 - CRITICAL: Do NOT criticize a choice that your own naturalVersion also uses. If your naturalVersion keeps the same word/form as the learner, that form is acceptable — do not flag it as an error in feedback.
 
 "naturalVersion" (⚠️ MUST be written entirely in English. Never write Korean here. This is an improved English sentence.):
